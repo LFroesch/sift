@@ -1,0 +1,14 @@
+# Specify what version, 2 is the industry standard, 1 is legacy
+version: "2"
+sql:
+# This Configures the SQL settings
+# Look in sql/schema directory for schema structure (ignores "downs")
+  - schema: "sql/schema"
+  # Look in the sql/queries directory for queries
+    queries: "sql/queries"
+    # Which engine to use
+    engine: "postgresql"
+    # Generate Go code in the internal/database directory
+    gen:
+      go:
+        out: "internal/database"
