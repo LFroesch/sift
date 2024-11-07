@@ -56,6 +56,7 @@ func main() {
 	cmds.register("following", middlewareLoggedIn(handlerFollowing))
 	cmds.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 	cmds.register("browse", middlewareLoggedIn(handlerBrowse))
+	cmds.register("help", handlerHelp)
 
 	// Step 5: Parse command line arguments
 	if len(os.Args) < 2 {

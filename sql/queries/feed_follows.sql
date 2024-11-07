@@ -16,14 +16,13 @@ JOIN users ON inserted_feed_follow.user_id = users.id;
 SELECT * FROM feeds WHERE url = $1;
 
 -- name: GetFeedFollowsByUser :many
-SELECT * FROM feed_follows 
-JOIN feeds on feed_follows.feed_id = feeds.id
+SELECT feed_follows.*, feeds.name AS feed_name, users.name AS user_name
+FROM feed_follows
+INNER JOIN feeds ON feed_follows.feed_id = feeds.id
+INNER JOIN users ON feeds.user_id = users.id
 WHERE feed_follows.user_id = $1;
 
--- name: DeleteFeedFollowByUserAndURL :one
+-- name: DeleteFeedFollowByUserAndURL :exec
 DELETE FROM feed_follows
 WHERE feed_follows.user_id = $1
-AND feed_id IN (
-    SELECT id FROM feeds WHERE url = $2
-)
-RETURNING *;
+AND user_id = $2;

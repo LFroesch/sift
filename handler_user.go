@@ -113,3 +113,27 @@ func requireLogin(s *state) error {
 	}
 	return nil
 }
+
+func handlerHelp(s *state, cmd command) error {
+	if len(cmd.Args) != 0 {
+		return errors.New("usage: <help>")
+	}
+	// Split these up into sections
+	fmt.Println("Help Menu:")
+	fmt.Println("--- User Management ---")
+	fmt.Println("help      | go run . help                    | Displays the help menu & commands")
+	fmt.Println("login     | go run . login <name>            | Logs in <name> user")
+	fmt.Println("register  | go run . register <name>         | Registers <name> user")
+	fmt.Println("users     | go run . users                   | Lists users including (current) signifier")
+	fmt.Println("reset     | go run . reset                   | Resets all tables")
+	fmt.Println("--- Feed Management ---")
+	// LOOK INTO THESE, USE LOGIN HANDLER for ADDFEED? Remove exclusivity? Add more searches / paging
+	fmt.Println("addfeed   | go run . addfeed <name> <url>    | Adds <url>(feed) to current signed in user as an RSSfeed named <name>")
+	fmt.Println("agg       | go run . agg <time_between_reqs> | Pulls RSSdata from your feeds with a <time_between_reqs> refresher - CTRL + C to stop")
+	fmt.Println("follow    | go run . follow <url>            | Follows <url> as current signed in user")
+	fmt.Println("unfollow  | go run . unfollow <url>          | Unfollows <url> as current signed in user")
+	fmt.Println("feeds     | go run . feeds                   | Lists all feeds and their 'main' user")
+	fmt.Println("following | go run . following               | Lists the current users followed URLs/RSSfeeds")
+	fmt.Println("browse    | go run . browse <limit (def: 2)> | Lists the newest posts in current users feed")
+	return nil
+}
