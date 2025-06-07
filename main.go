@@ -23,7 +23,7 @@ func main() {
 		log.Fatalf("Failed to read config: %v", err)
 	}
 	// set the dbURL (I do have this in config, maybe theres a way to get it?)
-	dbURL := "postgres://postgres:123123@localhost:5432/gator?sslmode=disable"
+	dbURL := "postgres://postgres:postgres@localhost:5432/gator?sslmode=disable"
 	// establish connection between program and PostgreSQL + error check
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
