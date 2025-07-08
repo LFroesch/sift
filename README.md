@@ -8,6 +8,7 @@ After any changes:
 ```bash
 go build -o gator
 ./gator <command>
+./gator help # for info
 ```
 
 ## Commands
