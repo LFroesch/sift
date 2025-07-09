@@ -5,10 +5,14 @@ function Posts({ currentUser }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(false)
+  const [fetchingFeeds, setFetchingFeeds] = useState(false)
+  const [fetchProgress, setFetchProgress] = useState({ current: 0, total: 20 })
   const [error, setError] = useState('')
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(0)
   const observer = useRef()
+  const fetchIntervalRef = useRef()
+  const fetchTimeoutRef = useRef()
   
   const POSTS_PER_LOAD = 10
 
@@ -187,25 +191,88 @@ function Posts({ currentUser }) {
   }
 
   const fetchFreshPosts = async () => {
-    if (!currentUser) return
+    if (!currentUser || fetchingFeeds) return
     
     const userId = currentUser.ID || currentUser.id
     if (!userId) return
 
-    setLoading(true)
-    try {
-      console.log('Manually fetching fresh posts from RSS feeds...')
-      const fetchResponse = await postAPI.fetchUserFeeds(userId)
-      console.log('Feed fetch response:', fetchResponse.data)
-      
-      // Refresh the posts after fetching
-      refreshPosts()
-    } catch (error) {
-      console.error('Error fetching feeds:', error)
-      setError('Failed to fetch fresh posts from RSS feeds')
-    } finally {
-      setLoading(false)
+    setFetchingFeeds(true)
+    setFetchProgress({ current: 0, total: 20 })
+    setError('')
+    
+    let currentIteration = 0
+    const maxIterations = 5
+    let totalNewPosts = 0
+
+    console.log('Starting aggregate fetch process...')
+
+    const performFetch = async () => {
+      try {
+        currentIteration++
+        setFetchProgress({ current: currentIteration, total: maxIterations })
+        
+        console.log(`Fetch iteration ${currentIteration}/${maxIterations}`)
+        const fetchResponse = await postAPI.fetchUserFeeds(userId)
+        console.log('Feed fetch response:', fetchResponse.data)
+        
+        if (fetchResponse.data.newPosts > 0) {
+          totalNewPosts += fetchResponse.data.newPosts
+          console.log(`Found ${fetchResponse.data.newPosts} new posts (total: ${totalNewPosts})`)
+        }
+        
+      } catch (error) {
+        console.error(`Error in fetch iteration ${currentIteration}:`, error)
+      }
     }
+
+    // Start the interval
+    fetchIntervalRef.current = setInterval(performFetch, 1000)
+    
+    // Set timeout to stop after 20 seconds
+    fetchTimeoutRef.current = setTimeout(() => {
+      if (fetchIntervalRef.current) {
+        clearInterval(fetchIntervalRef.current)
+        fetchIntervalRef.current = null
+      }
+      
+      setFetchingFeeds(false)
+      console.log(`Aggregate fetch completed. Total new posts: ${totalNewPosts}`)
+      
+      if (totalNewPosts > 0) {
+        // Refresh the posts to show new content
+        refreshPosts()
+      } else {
+        setError('No new posts found in RSS feeds')
+      }
+    }, 5000)
+
+    // Perform first fetch immediately
+    await performFetch()
+  }
+
+  // Cleanup function for intervals and timeouts
+  useEffect(() => {
+    return () => {
+      if (fetchIntervalRef.current) {
+        clearInterval(fetchIntervalRef.current)
+      }
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const stopFetching = () => {
+    if (fetchIntervalRef.current) {
+      clearInterval(fetchIntervalRef.current)
+      fetchIntervalRef.current = null
+    }
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current)
+      fetchTimeoutRef.current = null
+    }
+    setFetchingFeeds(false)
+    console.log('Fetch process manually stopped')
   }
 
   if (!currentUser) {
@@ -224,20 +291,48 @@ function Posts({ currentUser }) {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Latest Posts</h2>
           <div className="flex gap-2">
-            <button
-              onClick={fetchFreshPosts}
-              disabled={loading}
-              className="px-4 py-2 bg-green-100 text-green-800 rounded-md hover:bg-green-200 disabled:opacity-50"
-            >
-              {loading ? 'Fetching...' : 'Fetch Fresh Posts'}
-            </button>
-            <button
-              onClick={refreshPosts}
-              disabled={initialLoading}
-              className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 disabled:opacity-50"
-            >
-              {initialLoading ? 'Loading...' : 'Refresh'}
-            </button>
+            {fetchingFeeds ? (
+              <>
+                <button
+                  onClick={fetchFreshPosts}
+                  disabled={true}
+                  className="px-4 py-2 bg-green-100 text-green-800 rounded-md disabled:opacity-50 relative"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Fetching... ({fetchProgress.current}/{fetchProgress.total})</span>
+                    <div className="w-12 h-2 bg-green-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-green-600 transition-all duration-300"
+                        style={{ width: `${(fetchProgress.current / fetchProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={stopFetching}
+                  className="px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200"
+                >
+                  Stop
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={fetchFreshPosts}
+                  disabled={initialLoading}
+                  className="px-4 py-2 bg-green-100 text-green-800 rounded-md hover:bg-green-200 disabled:opacity-50"
+                >
+                  Fetch Fresh Posts
+                </button>
+                <button
+                  onClick={refreshPosts}
+                  disabled={initialLoading}
+                  className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 disabled:opacity-50"
+                >
+                  {initialLoading ? 'Loading...' : 'Refresh'}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -297,9 +392,20 @@ function Posts({ currentUser }) {
                       <p className="line-clamp-3">
                         {(() => {
                           const description = post.description?.String || post.Description?.String || ''
-                          return description.length > 200 
-                            ? `${description.substring(0, 200)}...`
-                            : description
+                          // Clean up any remaining HTML entities and formatting
+                          const cleanedDescription = description
+                            .replace(/&amp;/g, '&')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&#39;/g, "'")
+                            .replace(/&nbsp;/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim()
+                          
+                          return cleanedDescription.length > 200 
+                            ? `${cleanedDescription.substring(0, 200)}...`
+                            : cleanedDescription
                         })()}
                       </p>
                     </div>

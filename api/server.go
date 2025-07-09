@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -581,19 +582,126 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 		return nil, err
 	}
 
+	// Clean up common XML issues before parsing
+	bodyStr := string(body)
+	bodyStr = s.cleanXML(bodyStr)
+
 	var feed RSSFeed
-	err = xml.Unmarshal(body, &feed)
+	err = xml.Unmarshal([]byte(bodyStr), &feed)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("XML parsing error: %w", err)
 	}
 
-	// Unescape HTML entities
+	// Unescape HTML entities and clean up descriptions
 	feed.Channel.Title = html.UnescapeString(feed.Channel.Title)
 	feed.Channel.Description = html.UnescapeString(feed.Channel.Description)
 	for i := range feed.Channel.Item {
 		feed.Channel.Item[i].Title = html.UnescapeString(feed.Channel.Item[i].Title)
-		feed.Channel.Item[i].Description = html.UnescapeString(feed.Channel.Item[i].Description)
+		feed.Channel.Item[i].Description = s.cleanDescription(html.UnescapeString(feed.Channel.Item[i].Description))
 	}
 
 	return &feed, nil
+}
+
+// cleanDescription removes HTML tags and cleans up RSS feed descriptions
+func (s *Server) cleanDescription(description string) string {
+	// Special handling for Hacker News style feeds
+	if strings.Contains(description, "Article URL:") && strings.Contains(description, "Comments URL:") {
+		return s.extractHackerNewsDescription(description)
+	}
+
+	// Remove HTML tags
+	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
+	cleaned := htmlTagRegex.ReplaceAllString(description, "")
+
+	// Remove extra whitespace and newlines
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = regexp.MustCompile(`\s+`).ReplaceAllString(cleaned, " ")
+
+	// Remove common RSS feed artifacts
+	cleaned = strings.ReplaceAll(cleaned, "&nbsp;", " ")
+	cleaned = strings.ReplaceAll(cleaned, "\n", " ")
+	cleaned = strings.ReplaceAll(cleaned, "\r", " ")
+
+	return cleaned
+}
+
+// cleanXML fixes common XML parsing issues in RSS feeds
+func (s *Server) cleanXML(xmlContent string) string {
+	// Fix unclosed hr tags and similar issues
+	xmlContent = regexp.MustCompile(`<hr[^>]*>`).ReplaceAllString(xmlContent, "<hr/>")
+	xmlContent = regexp.MustCompile(`<br[^>]*>`).ReplaceAllString(xmlContent, "<br/>")
+	xmlContent = regexp.MustCompile(`<img([^>]*)>`).ReplaceAllString(xmlContent, "<img$1/>")
+	xmlContent = regexp.MustCompile(`<input([^>]*)>`).ReplaceAllString(xmlContent, "<input$1/>")
+
+	// Remove or fix other common problematic elements
+	xmlContent = strings.ReplaceAll(xmlContent, "&", "&amp;")
+	xmlContent = strings.ReplaceAll(xmlContent, "&amp;amp;", "&amp;")
+	xmlContent = strings.ReplaceAll(xmlContent, "&amp;lt;", "&lt;")
+	xmlContent = strings.ReplaceAll(xmlContent, "&amp;gt;", "&gt;")
+	xmlContent = strings.ReplaceAll(xmlContent, "&amp;quot;", "&quot;")
+
+	return xmlContent
+}
+
+// extractHackerNewsDescription extracts meaningful content from Hacker News style descriptions
+func (s *Server) extractHackerNewsDescription(description string) string {
+	// For Hacker News style feeds, we'll create a more meaningful description
+	// Extract the title from the link if possible, or provide a summary
+
+	// Remove HTML tags first
+	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
+	plainText := htmlTagRegex.ReplaceAllString(description, "")
+
+	// Extract article URL
+	articleURLRegex := regexp.MustCompile(`Article URL:\s*([^\s]+)`)
+	matches := articleURLRegex.FindStringSubmatch(plainText)
+
+	var result string
+	if len(matches) > 1 {
+		articleURL := matches[1]
+		// Try to extract a meaningful description from the URL
+		if strings.Contains(articleURL, "github.com") {
+			result = "GitHub repository: " + s.extractGitHubRepoInfo(articleURL)
+		} else if strings.Contains(articleURL, "arxiv.org") {
+			result = "Research paper from arXiv"
+		} else if strings.Contains(articleURL, "youtube.com") || strings.Contains(articleURL, "youtu.be") {
+			result = "YouTube video"
+		} else {
+			// Extract domain for a generic description
+			domainRegex := regexp.MustCompile(`https?://([^/]+)`)
+			domainMatches := domainRegex.FindStringSubmatch(articleURL)
+			if len(domainMatches) > 1 {
+				domain := domainMatches[1]
+				result = fmt.Sprintf("Article from %s", domain)
+			} else {
+				result = "External article"
+			}
+		}
+	} else {
+		result = "Hacker News discussion"
+	}
+
+	// Add points and comments info if available
+	pointsRegex := regexp.MustCompile(`Points:\s*(\d+)`)
+	commentsRegex := regexp.MustCompile(`#\s*Comments:\s*(\d+)`)
+
+	pointsMatches := pointsRegex.FindStringSubmatch(plainText)
+	commentsMatches := commentsRegex.FindStringSubmatch(plainText)
+
+	if len(pointsMatches) > 1 && len(commentsMatches) > 1 {
+		result += fmt.Sprintf(" • %s points, %s comments", pointsMatches[1], commentsMatches[1])
+	}
+
+	return result
+}
+
+// extractGitHubRepoInfo extracts repository name from GitHub URL
+func (s *Server) extractGitHubRepoInfo(url string) string {
+	repoRegex := regexp.MustCompile(`github\.com/([^/]+)/([^/?]+)`)
+	matches := repoRegex.FindStringSubmatch(url)
+	if len(matches) > 2 {
+		return fmt.Sprintf("%s/%s", matches[1], matches[2])
+	}
+	return url
 }
