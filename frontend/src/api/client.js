@@ -26,7 +26,9 @@ export const feedAPI = {
 export const followAPI = {
   getUserFollows: (userId) => apiClient.get(`/follows/${userId}`),
   follow: (followData) => apiClient.post('/follows', followData),
-  unfollow: (unfollowData) => apiClient.delete('/follows', { data: unfollowData }),
+  unfollow: (userId, feedUrl) => {
+    return apiClient.delete(`/follows/${userId}?feedUrl=${encodeURIComponent(feedUrl)}`)
+  },
 }
 
 // Post API

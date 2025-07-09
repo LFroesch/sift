@@ -92,29 +92,26 @@ function Feeds({ currentUser }) {
 
   const unfollowFeed = async (feedUrl) => {
     if (!currentUser) {
-      setError('Please select a user first')
-      return
+        setError('Please select a user first')
+        return
     }
     
     const userId = currentUser.ID || currentUser.id
     if (!userId) {
-      setError('No valid user ID found')
-      return
+        setError('No valid user ID found')
+        return
     }
 
     console.log('Unfollowing feed:', { userId, feedUrl })
 
     try {
-      await followAPI.unfollow({
-        user_id: userId,
-        feed_url: feedUrl
-      })
-      await fetchUserFollows()
+        await followAPI.unfollow(userId, feedUrl)
+        await fetchUserFollows()
     } catch (error) {
-      console.error('Error unfollowing feed:', error)
-      setError(error.response?.data?.error || 'Failed to unfollow feed')
+        console.error('Error unfollowing feed:', error)
+        setError(error.response?.data?.error || 'Failed to unfollow feed')
     }
-  }
+}
 
   // Check if user is following a feed by matching feed URLs in userFollows
   const isFollowing = (feedUrl) => {

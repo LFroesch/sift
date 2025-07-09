@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -49,7 +50,7 @@ func (s *Server) Start(port string) error {
 		// Feed follow routes
 		api.POST("/follows", s.followFeed)
 		api.GET("/follows/:userId", s.getUserFollows)
-		api.DELETE("/follows", s.unfollowFeed)
+		api.DELETE("/follows/:userId/:feedUrl", s.unfollowFeed)
 
 		// Post routes
 		api.GET("/posts/:userId", s.getUserPosts)
@@ -221,24 +222,27 @@ func (s *Server) getUserFollows(c *gin.Context) {
 }
 
 func (s *Server) unfollowFeed(c *gin.Context) {
-	var req struct {
-		UserID  string `json:"user_id" binding:"required"`
-		FeedURL string `json:"feed_url" binding:"required"`
-	}
+	userIDStr := c.Param("userId")
+	feedURL := c.Param("feedUrl")
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// URL decode the feedURL since it might have encoded characters
+	feedURL, err := url.QueryUnescape(feedURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed URL"})
 		return
 	}
 
-	userID, err := uuid.Parse(req.UserID)
+	fmt.Printf("Unfollow request: UserID=%s, FeedURL=%s\n", userIDStr, feedURL)
+
+	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
-	feed, err := s.db.GetFeedByURL(context.Background(), req.FeedURL)
+	feed, err := s.db.GetFeedByURL(context.Background(), feedURL)
 	if err != nil {
+		fmt.Printf("Feed not found for URL: %s, error: %v\n", feedURL, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Feed not found"})
 		return
 	}
@@ -249,10 +253,12 @@ func (s *Server) unfollowFeed(c *gin.Context) {
 	})
 
 	if err != nil {
+		fmt.Printf("Error deleting feed follow: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	fmt.Printf("Successfully unfollowed feed: %s\n", feed.Name)
 	c.JSON(http.StatusOK, gin.H{"message": "Unfollowed successfully"})
 }
 

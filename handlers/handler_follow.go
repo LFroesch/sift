@@ -72,6 +72,8 @@ func HandlerFollowing(s *State, cmd Command, user database.User) error {
 	return nil
 }
 
+// In handlers/handler_follow.go - just replace the HandlerUnfollow function:
+
 func HandlerUnfollow(s *State, cmd Command, user database.User) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("usage: %s <feed_url>", cmd.Name)
@@ -81,9 +83,10 @@ func HandlerUnfollow(s *State, cmd Command, user database.User) error {
 	if err != nil {
 		return fmt.Errorf("couldn't get feed: %w", err)
 	}
-	err = s.Db.DeleteFeedFollowByUserAndURL(context.Background(), database.DeleteFeedFollowByUserAndURLParams{
-		UserID:   user.ID,
-		UserID_2: feed.ID,
+
+	err = s.Db.DeleteFeedFollowByUserAndFeed(context.Background(), database.DeleteFeedFollowByUserAndFeedParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
 	})
 	if err != nil {
 		return fmt.Errorf("couldn't delete feed follow: %w", err)
