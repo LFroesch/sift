@@ -93,10 +93,10 @@ func HandlerGetUsers(s *State, cmd Command) error {
 		return fmt.Errorf("failed to get users: %w", err)
 	}
 	for _, user := range users {
-		if user == currentUser {
-			fmt.Printf("* %s (current)\n", user)
+		if user.Name == currentUser {
+			fmt.Printf("* %s (current)\n", user.Name)
 		} else {
-			fmt.Printf("* %s\n", user)
+			fmt.Printf("* %s\n", user.Name)
 		}
 	}
 	return nil

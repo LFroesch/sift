@@ -43,6 +43,8 @@ export const followAPI = {
 export const postAPI = {
   getUserPosts: (userId, limit = 10, offset = 0) => 
     apiClient.get(`/posts/${userId}?limit=${limit}&offset=${offset}`),
+  fetchUserFeeds: (userId) =>
+    apiClient.post(`/feeds/fetch/${userId}`),
 }
 
 export default apiClient

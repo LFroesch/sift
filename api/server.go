@@ -2,9 +2,15 @@ package api
 
 import (
 	"context"
+	"database/sql"
+	"encoding/xml"
 	"fmt"
+	"html"
+	"io"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/LFroesch/Gator/internal/database"
@@ -57,6 +63,9 @@ func (s *Server) Start(port string) error {
 
 		// Post routes
 		api.GET("/posts/:userId", s.getUserPosts)
+
+		// Feed fetch route
+		api.POST("/feeds/fetch/:userId", s.fetchUserFeeds)
 	}
 
 	return r.Run(":" + port)
@@ -406,9 +415,9 @@ func (s *Server) getUserPosts(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"posts":  posts,
-			"limit":  limit,
-			"offset": offset,
+			"posts":   posts,
+			"limit":   limit,
+			"offset":  offset,
 			"hasMore": len(posts) == limit, // Simple check if there might be more
 		})
 	} else {
@@ -424,10 +433,167 @@ func (s *Server) getUserPosts(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"posts":  posts,
-			"limit":  limit,
-			"offset": offset,
+			"posts":   posts,
+			"limit":   limit,
+			"offset":  offset,
 			"hasMore": len(posts) == limit,
 		})
 	}
+}
+
+// RSS Feed structures for parsing
+type RSSFeed struct {
+	Channel struct {
+		Title       string    `xml:"title"`
+		Link        string    `xml:"link"`
+		Description string    `xml:"description"`
+		Item        []RSSItem `xml:"item"`
+	} `xml:"channel"`
+}
+
+type RSSItem struct {
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	PubDate     string `xml:"pubDate"`
+}
+
+// fetchUserFeeds - API endpoint to fetch new posts for a user's followed feeds
+func (s *Server) fetchUserFeeds(c *gin.Context) {
+	userIDStr := c.Param("userId")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Get user's followed feeds
+	follows, err := s.db.GetFeedFollowsByUser(context.Background(), userID)
+	if err != nil {
+		log.Printf("Error getting user follows: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user follows"})
+		return
+	}
+
+	if len(follows) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "No feeds to fetch",
+			"count":   0,
+		})
+		return
+	}
+
+	totalNewPosts := 0
+	fetchedFeeds := 0
+
+	// Fetch from each followed feed
+	for _, follow := range follows {
+		// Get the feed details
+		feed, err := s.db.GetFeedByID(context.Background(), follow.FeedID)
+		if err != nil {
+			log.Printf("Error getting feed %s: %v", follow.FeedID, err)
+			continue
+		}
+
+		// Fetch new posts from this feed
+		newPosts, err := s.scrapeFeedForAPI(feed)
+		if err != nil {
+			log.Printf("Error scraping feed %s: %v", feed.Name, err)
+			continue
+		}
+
+		totalNewPosts += newPosts
+		fetchedFeeds++
+
+		// Mark feed as fetched
+		s.db.MarkFeedFetched(context.Background(), feed.ID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "Feeds fetched successfully",
+		"feedsFetched": fetchedFeeds,
+		"totalFeeds":   len(follows),
+		"newPosts":     totalNewPosts,
+	})
+}
+
+// scrapeFeedForAPI - Internal function to scrape a feed and return count of new posts
+func (s *Server) scrapeFeedForAPI(feed database.Feed) (int, error) {
+	feedData, err := s.fetchRSSFeed(context.Background(), feed.Url)
+	if err != nil {
+		return 0, fmt.Errorf("couldn't fetch feed %s: %w", feed.Name, err)
+	}
+
+	newPosts := 0
+	for _, item := range feedData.Channel.Item {
+		publishedAt := sql.NullTime{}
+		if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
+			publishedAt = sql.NullTime{
+				Time:  t,
+				Valid: true,
+			}
+		}
+
+		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+			FeedID:    feed.ID,
+			Title:     item.Title,
+			Description: sql.NullString{
+				String: item.Description,
+				Valid:  true,
+			},
+			Url:         item.Link,
+			PublishedAt: publishedAt,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				continue // Post already exists, skip
+			}
+			log.Printf("Couldn't create post: %v", err)
+			continue
+		}
+		newPosts++
+	}
+
+	log.Printf("Feed %s scraped, %d new posts added", feed.Name, newPosts)
+	return newPosts, nil
+}
+
+// fetchRSSFeed - Fetch and parse RSS feed
+func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
+	request, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Add("User-Agent", "gator")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var feed RSSFeed
+	err = xml.Unmarshal(body, &feed)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unescape HTML entities
+	feed.Channel.Title = html.UnescapeString(feed.Channel.Title)
+	feed.Channel.Description = html.UnescapeString(feed.Channel.Description)
+	for i := range feed.Channel.Item {
+		feed.Channel.Item[i].Title = html.UnescapeString(feed.Channel.Item[i].Title)
+		feed.Channel.Item[i].Description = html.UnescapeString(feed.Channel.Item[i].Description)
+	}
+
+	return &feed, nil
 }
