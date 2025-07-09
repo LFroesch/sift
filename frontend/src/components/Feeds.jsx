@@ -30,7 +30,8 @@ function Feeds({ currentUser }) {
   const fetchUserFollows = async () => {
     if (!currentUser) return
     try {
-      const response = await followAPI.getUserFollows(currentUser.id)
+      const userId = currentUser.ID || currentUser.id
+      const response = await followAPI.getUserFollows(userId)
       setUserFollows(response.data)
     } catch (error) {
       console.error('Error fetching user follows:', error)
@@ -101,26 +102,27 @@ function Feeds({ currentUser }) {
       return
     }
 
-    console.log('Unfollowing feed:', { userId, feedUrl }) // Debug
+    console.log('Unfollowing feed:', { userId, feedUrl })
 
     try {
       await followAPI.unfollow({
         user_id: userId,
         feed_url: feedUrl
       })
-      await fetchUserFollows() // Refresh the follows list
+      await fetchUserFollows()
     } catch (error) {
       console.error('Error unfollowing feed:', error)
       setError(error.response?.data?.error || 'Failed to unfollow feed')
     }
   }
 
-  // Just copy what CLI does - match by feed names
+  // Check if user is following a feed by matching feed URLs in userFollows
   const isFollowing = (feedUrl) => {
-    const feed = feeds.find(f => (f.url || f.Url) === feedUrl)
-    if (!feed) return false
-    const feedName = feed.name || feed.Name
-    return userFollows.some(follow => follow.FeedName === feedName)
+    return userFollows.some(follow => {
+      // Find the feed that matches this follow
+      const feed = feeds.find(f => (f.name || f.Name) === follow.FeedName)
+      return feed && (feed.url || feed.Url) === feedUrl
+    })
   }
 
   if (!currentUser) {
@@ -141,6 +143,12 @@ function Feeds({ currentUser }) {
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-700">{error}</p>
+            <button 
+              onClick={() => setError('')}
+              className="text-sm text-red-600 hover:text-red-800 mt-1"
+            >
+              Dismiss
+            </button>
           </div>
         )}
         
@@ -209,31 +217,37 @@ function Feeds({ currentUser }) {
             {feeds.length === 0 ? (
               <p className="p-4 text-gray-500">No feeds found</p>
             ) : (
-              feeds.map((feed) => (
-                <div key={feed.url || feed.Url} className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{feed.name || feed.Name}</h4>
-                      <p className="text-sm text-gray-600">{feed.url || feed.Url}</p>
-                      <p className="text-xs text-gray-500">by {feed.username || feed.Username}</p>
+              feeds.map((feed, index) => {
+                const feedUrl = feed.url || feed.Url
+                const feedName = feed.name || feed.Name
+                const userName = feed.username || feed.Username
+                
+                return (
+                  <div key={feedUrl || index} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{feedName}</h4>
+                        <p className="text-sm text-gray-600">{feedUrl}</p>
+                        <p className="text-xs text-gray-500">by {userName}</p>
+                      </div>
+                      <button
+                        onClick={() => 
+                          isFollowing(feedUrl) 
+                            ? unfollowFeed(feedUrl)
+                            : followFeed(feedUrl)
+                        }
+                        className={`px-3 py-1 rounded-md text-sm ml-4 ${
+                          isFollowing(feedUrl)
+                            ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                            : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                      >
+                        {isFollowing(feedUrl) ? 'Unfollow' : 'Follow'}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => 
-                        isFollowing(feed.url || feed.Url) 
-                          ? unfollowFeed(feed.url || feed.Url)
-                          : followFeed(feed.url || feed.Url)
-                      }
-                      className={`px-3 py-1 rounded-md text-sm ml-4 ${
-                        isFollowing(feed.url || feed.Url)
-                          ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                          : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                      }`}
-                    >
-                      {isFollowing(feed.url || feed.Url) ? 'Unfollow' : 'Follow'}
-                    </button>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>

@@ -152,7 +152,6 @@ func (s *Server) getAllFeeds(c *gin.Context) {
 }
 
 // Feed follow handlers
-// Feed follow handlers
 func (s *Server) followFeed(c *gin.Context) {
 	var req struct {
 		UserID  string `json:"user_id" binding:"required"`
@@ -238,17 +237,15 @@ func (s *Server) unfollowFeed(c *gin.Context) {
 		return
 	}
 
-	// Get feed first, then delete the follow relationship
 	feed, err := s.db.GetFeedByURL(context.Background(), req.FeedURL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Feed not found"})
 		return
 	}
 
-	// Use the correct parameters for your existing SQL query
-	err = s.db.DeleteFeedFollowByUserAndURL(context.Background(), database.DeleteFeedFollowByUserAndURLParams{
-		UserID:   userID,
-		UserID_2: feed.ID, // This matches your current SQL structure
+	err = s.db.DeleteFeedFollowByUserAndFeed(context.Background(), database.DeleteFeedFollowByUserAndFeedParams{
+		UserID: userID,
+		FeedID: feed.ID,
 	})
 
 	if err != nil {
