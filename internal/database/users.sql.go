@@ -49,6 +49,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
+	return err
+}
+
 const getUser = `-- name: GetUser :one
 
 SELECT id, created_at, updated_at, name FROM users
@@ -86,23 +95,28 @@ func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
 
 const getUsers = `-- name: GetUsers :many
 
-SELECT name FROM users ORDER BY name
+SELECT id, name FROM users ORDER BY name
 `
 
+type GetUsersRow struct {
+	ID   uuid.UUID
+	Name string
+}
+
 // don't need RETURNING; because SELECT * already does the job
-func (q *Queries) GetUsers(ctx context.Context) ([]string, error) {
+func (q *Queries) GetUsers(ctx context.Context) ([]GetUsersRow, error) {
 	rows, err := q.db.QueryContext(ctx, getUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []GetUsersRow
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
+		var i GetUsersRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
-		items = append(items, name)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -111,4 +125,29 @@ func (q *Queries) GetUsers(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users 
+SET name = $2, updated_at = $3
+WHERE id = $1
+RETURNING id, created_at, updated_at, name
+`
+
+type UpdateUserParams struct {
+	ID        uuid.UUID
+	Name      string
+	UpdatedAt time.Time
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUser, arg.ID, arg.Name, arg.UpdatedAt)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+	)
+	return i, err
 }

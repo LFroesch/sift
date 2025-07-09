@@ -11,7 +11,7 @@ VALUES (
 RETURNING *;
 
 -- name: GetAllFeeds :many
-SELECT feeds.name, feeds.url, users.name as username
+SELECT feeds.id, feeds.name, feeds.url, feeds.user_id, users.name as username
 FROM feeds
 JOIN users ON feeds.user_id = users.id;
 
@@ -25,3 +25,15 @@ RETURNING *;
 SELECT * FROM feeds
 ORDER BY last_fetched_at NULLS FIRST
 LIMIT 1;
+
+-- name: UpdateFeed :one
+UPDATE feeds 
+SET name = $2, url = $3, updated_at = $4
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteFeed :exec
+DELETE FROM feeds WHERE id = $1;
+
+-- name: GetFeedByID :one
+SELECT * FROM feeds WHERE id = $1;

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -42,15 +41,19 @@ func (s *Server) Start(port string) error {
 		api.POST("/users", s.createUser)
 		api.GET("/users", s.getUsers)
 		api.GET("/users/:name", s.getUser)
+		api.PUT("/users/:userId", s.updateUser)
+		api.DELETE("/users/:userId", s.deleteUser)
 
 		// Feed routes
 		api.POST("/feeds", s.createFeed)
 		api.GET("/feeds", s.getAllFeeds)
+		api.PUT("/feeds/:feedId", s.updateFeed)
+		api.DELETE("/feeds/:feedId", s.deleteFeed)
 
 		// Feed follow routes
 		api.POST("/follows", s.followFeed)
 		api.GET("/follows/:userId", s.getUserFollows)
-		api.DELETE("/follows/:userId/:feedUrl", s.unfollowFeed)
+		api.DELETE("/follows/:userId", s.unfollowFeed)
 
 		// Post routes
 		api.GET("/posts/:userId", s.getUserPosts)
@@ -106,6 +109,58 @@ func (s *Server) getUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// User update handler
+func (s *Server) updateUser(c *gin.Context) {
+	userIDStr := c.Param("userId")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := s.db.UpdateUser(context.Background(), database.UpdateUserParams{
+		ID:        userID,
+		Name:      req.Name,
+		UpdatedAt: time.Now(),
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+// User delete handler
+func (s *Server) deleteUser(c *gin.Context) {
+	userIDStr := c.Param("userId")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	err = s.db.DeleteUser(context.Background(), userID)
+	if err != nil {
+		fmt.Printf("Error deleting user: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("Successfully deleted user: %s\n", userID)
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+
 // Feed handlers
 func (s *Server) createFeed(c *gin.Context) {
 	var req struct {
@@ -152,6 +207,60 @@ func (s *Server) getAllFeeds(c *gin.Context) {
 	c.JSON(http.StatusOK, feeds)
 }
 
+// Feed update handler
+func (s *Server) updateFeed(c *gin.Context) {
+	feedIDStr := c.Param("feedId")
+	feedID, err := uuid.Parse(feedIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
+		return
+	}
+
+	var req struct {
+		Name string `json:"name" binding:"required"`
+		URL  string `json:"url" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	feed, err := s.db.UpdateFeed(context.Background(), database.UpdateFeedParams{
+		ID:        feedID,
+		Name:      req.Name,
+		Url:       req.URL,
+		UpdatedAt: time.Now(),
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, feed)
+}
+
+// Feed delete handler
+func (s *Server) deleteFeed(c *gin.Context) {
+	feedIDStr := c.Param("feedId")
+	feedID, err := uuid.Parse(feedIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
+		return
+	}
+
+	err = s.db.DeleteFeed(context.Background(), feedID)
+	if err != nil {
+		fmt.Printf("Error deleting feed: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("Successfully deleted feed: %s\n", feedID)
+	c.JSON(http.StatusOK, gin.H{"message": "Feed deleted successfully"})
+}
+
 // Feed follow handlers
 func (s *Server) followFeed(c *gin.Context) {
 	var req struct {
@@ -164,7 +273,7 @@ func (s *Server) followFeed(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf("Follow request: UserID=%s, FeedURL=%s\n", req.UserID, req.FeedURL) // Debug
+	fmt.Printf("Follow request: UserID=%s, FeedURL=%s\n", req.UserID, req.FeedURL)
 
 	userID, err := uuid.Parse(req.UserID)
 	if err != nil {
@@ -175,12 +284,12 @@ func (s *Server) followFeed(c *gin.Context) {
 	// Get feed by URL first
 	feed, err := s.db.GetFeedByURL(context.Background(), req.FeedURL)
 	if err != nil {
-		fmt.Printf("Feed not found for URL: %s, error: %v\n", req.FeedURL, err) // Debug
+		fmt.Printf("Feed not found for URL: %s, error: %v\n", req.FeedURL, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Feed not found"})
 		return
 	}
 
-	fmt.Printf("Found feed: ID=%s, Name=%s\n", feed.ID, feed.Name) // Debug
+	fmt.Printf("Found feed: ID=%s, Name=%s\n", feed.ID, feed.Name)
 
 	follow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
 		ID:        uuid.New(),
@@ -191,12 +300,12 @@ func (s *Server) followFeed(c *gin.Context) {
 	})
 
 	if err != nil {
-		fmt.Printf("Error creating follow: %v\n", err) // Debug
+		fmt.Printf("Error creating follow: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	fmt.Printf("Follow created successfully\n") // Debug
+	fmt.Printf("Follow created successfully\n")
 	c.JSON(http.StatusCreated, follow)
 }
 
@@ -208,31 +317,29 @@ func (s *Server) getUserFollows(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf("Getting follows for user ID: %s\n", userID) // Debug
+	fmt.Printf("Getting follows for user ID: %s\n", userID)
 
 	follows, err := s.db.GetFeedFollowsByUser(context.Background(), userID)
 	if err != nil {
-		fmt.Printf("Error getting follows: %v\n", err) // Debug
+		fmt.Printf("Error getting follows: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	fmt.Printf("Found %d follows\n", len(follows)) // Debug
+	fmt.Printf("Found %d follows\n", len(follows))
 	c.JSON(http.StatusOK, follows)
 }
 
 func (s *Server) unfollowFeed(c *gin.Context) {
 	userIDStr := c.Param("userId")
-	feedURL := c.Param("feedUrl")
-
-	// URL decode the feedURL since it might have encoded characters
-	feedURL, err := url.QueryUnescape(feedURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed URL"})
-		return
-	}
+	feedURL := c.Query("feedUrl")
 
 	fmt.Printf("Unfollow request: UserID=%s, FeedURL=%s\n", userIDStr, feedURL)
+
+	if feedURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "feedUrl query parameter is required"})
+		return
+	}
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
@@ -278,15 +385,49 @@ func (s *Server) getUserPosts(c *gin.Context) {
 		return
 	}
 
-	posts, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
-		UserID: userID,
-		Limit:  int32(limit),
-	})
-
+	offsetStr := c.DefaultQuery("offset", "0")
+	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset"})
 		return
 	}
 
-	c.JSON(http.StatusOK, posts)
+	// Use offset-based pagination if offset is provided
+	if offset > 0 {
+		posts, err := s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
+			UserID: userID,
+			Limit:  int32(limit),
+			Offset: int32(offset),
+		})
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"posts":  posts,
+			"limit":  limit,
+			"offset": offset,
+			"hasMore": len(posts) == limit, // Simple check if there might be more
+		})
+	} else {
+		// Use the original query for backward compatibility
+		posts, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+			UserID: userID,
+			Limit:  int32(limit),
+		})
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"posts":  posts,
+			"limit":  limit,
+			"offset": offset,
+			"hasMore": len(posts) == limit,
+		})
+	}
 }

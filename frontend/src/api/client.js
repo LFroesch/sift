@@ -14,26 +14,35 @@ export const userAPI = {
   getAll: () => apiClient.get('/users'),
   getByName: (name) => apiClient.get(`/users/${name}`),
   create: (userData) => apiClient.post('/users', userData),
+  update: (userId, userData) => apiClient.put(`/users/${userId}`, userData),
+  delete: (userId) => apiClient.delete(`/users/${userId}`),
 }
 
 // Feed API
 export const feedAPI = {
   getAll: () => apiClient.get('/feeds'),
   create: (feedData) => apiClient.post('/feeds', feedData),
+  update: (feedId, feedData) => apiClient.put(`/feeds/${feedId}`, feedData),
+  delete: (feedId) => apiClient.delete(`/feeds/${feedId}`),
 }
 
 // Follow API
 export const followAPI = {
   getUserFollows: (userId) => apiClient.get(`/follows/${userId}`),
-  follow: (followData) => apiClient.post('/follows', followData),
+  follow: (followData) => {
+    console.log('Making follow request with data:', followData)
+    return apiClient.post('/follows', followData)
+  },
   unfollow: (userId, feedUrl) => {
+    console.log('Making unfollow request:', { userId, feedUrl })
     return apiClient.delete(`/follows/${userId}?feedUrl=${encodeURIComponent(feedUrl)}`)
   },
 }
 
 // Post API
 export const postAPI = {
-  getUserPosts: (userId, limit = 10) => apiClient.get(`/posts/${userId}?limit=${limit}`),
+  getUserPosts: (userId, limit = 10, offset = 0) => 
+    apiClient.get(`/posts/${userId}?limit=${limit}&offset=${offset}`),
 }
 
 export default apiClient
