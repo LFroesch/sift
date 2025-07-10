@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { postAPI } from '../api/client'
+import { postAPI, bookmarkAPI, readStatusAPI } from '../api/client'
 
 function Posts({ currentUser }) {
   const [posts, setPosts] = useState([])
@@ -170,13 +170,32 @@ function Posts({ currentUser }) {
       const date = typeof dateString === 'string' ? dateString : dateString.Time
       if (!date) return 'No date'
       
-      return new Date(date).toLocaleDateString('en-US', {
+      const postDate = new Date(date)
+      const today = new Date()
+      
+      // Check if the post date is today
+      const isToday = postDate.getFullYear() === today.getFullYear() &&
+                     postDate.getMonth() === today.getMonth() &&
+                     postDate.getDate() === today.getDate()
+      
+      if (isToday) {
+        return `Today | ${postDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`
+      }
+      
+      // Format date and time separately, then join with a separator
+      const datePart = postDate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric',
+        day: 'numeric'
+      })
+      const timePart = postDate.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
       })
+      return `${datePart} | ${timePart}`
     } catch {
       return 'Invalid date'
     }
@@ -275,10 +294,98 @@ function Posts({ currentUser }) {
     console.log('Fetch process manually stopped')
   }
 
+  const toggleBookmark = async (post) => {
+    if (!currentUser) return
+    
+    const userId = currentUser.ID || currentUser.id
+    if (!userId) return
+
+    try {
+      if (post.is_bookmarked) {
+        await bookmarkAPI.deleteBookmark(userId, post.ID || post.id)
+      } else {
+        await bookmarkAPI.createBookmark({
+          user_id: userId,
+          post_id: post.ID || post.id
+        })
+      }
+      
+      // Update the post in our local state
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          (p.ID || p.id) === (post.ID || post.id) 
+            ? { ...p, is_bookmarked: !p.is_bookmarked }
+            : p
+        )
+      )
+    } catch (error) {
+      console.error('Error toggling bookmark:', error)
+      setError('Failed to update bookmark')
+    }
+  }
+
+  const toggleReadStatus = async (post) => {
+    if (!currentUser) return
+    
+    const userId = currentUser.ID || currentUser.id
+    if (!userId) return
+
+    try {
+      if (post.is_read) {
+        await readStatusAPI.markUnread(userId, post.ID || post.id)
+      } else {
+        await readStatusAPI.markRead({
+          user_id: userId,
+          post_id: post.ID || post.id
+        })
+      }
+      
+      // Update the post in our local state
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          (p.ID || p.id) === (post.ID || post.id) 
+            ? { ...p, is_read: !p.is_read }
+            : p
+        )
+      )
+    } catch (error) {
+      console.error('Error toggling read status:', error)
+      setError('Failed to update read status')
+    }
+  }
+
+  const markAsRead = async (post) => {
+    if (!currentUser || post.is_read) return // Don't mark if already read
+    
+    const userId = currentUser.ID || currentUser.id
+    if (!userId) return
+
+    try {
+      await readStatusAPI.markRead({
+        user_id: userId,
+        post_id: post.ID || post.id
+      })
+      
+      // Update the post in our local state
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          (p.ID || p.id) === (post.ID || post.id) 
+            ? { ...p, is_read: true }
+            : p
+        )
+      )
+    } catch (error) {
+      console.error('Error marking post as read:', error)
+      // Don't show error for this since it's a background action
+    }
+  }
+
   if (!currentUser) {
     return (
       <div className="px-4 py-6 sm:px-0">
-        <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <div className="text-6xl mb-4">👥</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No User Selected</h3>
           <p className="text-gray-500">Please select a user first to view posts.</p>
         </div>
       </div>
@@ -287,9 +394,12 @@ function Posts({ currentUser }) {
 
   return (
     <div className="px-4 py-6 sm:px-0">
-      <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Latest Posts</h2>
+          <div className="flex items-center space-x-3">
+            <div className="text-2xl">📰</div>
+            <h2 className="text-2xl font-bold text-gray-900">Latest Posts</h2>
+          </div>
           <div className="flex gap-2">
             {fetchingFeeds ? (
               <>
@@ -368,23 +478,48 @@ function Posts({ currentUser }) {
                 >
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900 mb-1">
+                      <h3 className={`text-lg font-medium mb-1 ${post.is_read ? 'text-gray-500' : 'text-gray-900'}`}>
                         {post.title || post.Title}
                       </h3>
                       <div className="flex items-center text-sm text-gray-500 space-x-4">
                         <span>From: {post.feed_name || post.FeedName}</span>
                         <span>•</span>
                         <span>{formatDate(post.published_at || post.PublishedAt)}</span>
+                        {post.is_read && <span className="text-green-600 font-medium">• Read</span>}
+                        {post.is_bookmarked && <span className="text-yellow-600 font-medium">• Bookmarked</span>}
                       </div>
                     </div>
-                    <a
-                      href={post.url || post.Url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 text-sm flex-shrink-0 ml-4"
-                    >
-                      Read More
-                    </a>
+                    <div className="flex gap-2 flex-shrink-0 ml-4">
+                      <button
+                        onClick={() => toggleBookmark(post)}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          post.is_bookmarked
+                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        }`}
+                      >
+                        {post.is_bookmarked ? 'Remove Bookmark' : 'Add to Bookmarks'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          markAsRead(post)
+                          window.open(post.url || post.Url, '_blank', 'noopener,noreferrer')
+                        }}
+                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 text-sm"
+                      >
+                        Read More
+                      </button>
+                      <button
+                        onClick={() => toggleReadStatus(post)}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          post.is_read
+                            ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            : 'bg-green-100 text-green-800 hover:bg-green-200'
+                        }`}
+                      >
+                        {post.is_read ? 'Mark Unread' : 'Mark Read'}
+                      </button>
+                    </div>
                   </div>
                   
                   {(post.description?.String || post.Description?.String) && (
@@ -392,8 +527,16 @@ function Posts({ currentUser }) {
                       <p className="line-clamp-3">
                         {(() => {
                           const description = post.description?.String || post.Description?.String || ''
-                          // Clean up any remaining HTML entities and formatting
-                          const cleanedDescription = description
+                          
+                          // Helper function to strip HTML tags
+                          const stripHTML = (html) => {
+                            const tmp = document.createElement('div')
+                            tmp.innerHTML = html
+                            return tmp.textContent || tmp.innerText || ''
+                          }
+                          
+                          // Clean up HTML tags and entities
+                          const cleanedDescription = stripHTML(description)
                             .replace(/&amp;/g, '&')
                             .replace(/&lt;/g, '<')
                             .replace(/&gt;/g, '>')

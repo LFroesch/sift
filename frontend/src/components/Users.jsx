@@ -107,8 +107,11 @@ function Users({ currentUser, setCurrentUser }) {
 
   return (
     <div className="px-4 py-6 sm:px-0">
-      <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-6">User Management</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="text-2xl">👥</div>
+          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+        </div>
         
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">

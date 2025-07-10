@@ -11,6 +11,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type Bookmark struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.UUID
+	PostID    uuid.UUID
+}
+
 type Feed struct {
 	ID            uuid.UUID
 	CreatedAt     time.Time
@@ -38,6 +46,15 @@ type Post struct {
 	Description sql.NullString
 	PublishedAt sql.NullTime
 	FeedID      uuid.UUID
+}
+
+type PostRead struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.UUID
+	PostID    uuid.UUID
+	ReadAt    time.Time
 }
 
 type User struct {

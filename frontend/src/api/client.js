@@ -47,4 +47,22 @@ export const postAPI = {
     apiClient.post(`/feeds/fetch/${userId}`),
 }
 
+// Bookmark API
+export const bookmarkAPI = {
+  getUserBookmarks: (userId, limit = 10, offset = 0) =>
+    apiClient.get(`/bookmarks/${userId}?limit=${limit}&offset=${offset}`),
+  createBookmark: (bookmarkData) =>
+    apiClient.post('/bookmarks', bookmarkData),
+  deleteBookmark: (userId, postId) =>
+    apiClient.delete(`/bookmarks/${userId}/${postId}`),
+}
+
+// Read status API
+export const readStatusAPI = {
+  markRead: (readData) =>
+    apiClient.post('/reads', readData),
+  markUnread: (userId, postId) =>
+    apiClient.delete(`/reads/${userId}/${postId}`),
+}
+
 export default apiClient

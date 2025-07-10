@@ -1,6 +1,7 @@
 package api
 
 import (
+	"compress/gzip"
 	"context"
 	"database/sql"
 	"encoding/xml"
@@ -64,6 +65,15 @@ func (s *Server) Start(port string) error {
 
 		// Post routes
 		api.GET("/posts/:userId", s.getUserPosts)
+
+		// Bookmark routes
+		api.POST("/bookmarks", s.createBookmark)
+		api.DELETE("/bookmarks/:userId/:postId", s.deleteBookmark)
+		api.GET("/bookmarks/:userId", s.getUserBookmarks)
+
+		// Read status routes
+		api.POST("/reads", s.markPostRead)
+		api.DELETE("/reads/:userId/:postId", s.markPostUnread)
 
 		// Feed fetch route
 		api.POST("/feeds/fetch/:userId", s.fetchUserFeeds)
@@ -402,44 +412,277 @@ func (s *Server) getUserPosts(c *gin.Context) {
 		return
 	}
 
+	var posts []database.GetPostsForUserWithOffsetRow
 	// Use offset-based pagination if offset is provided
 	if offset > 0 {
-		posts, err := s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
+		posts, err = s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
 			UserID: userID,
 			Limit:  int32(limit),
 			Offset: int32(offset),
 		})
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"posts":   posts,
-			"limit":   limit,
-			"offset":  offset,
-			"hasMore": len(posts) == limit, // Simple check if there might be more
-		})
 	} else {
 		// Use the original query for backward compatibility
-		posts, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		postsOrig, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
 			UserID: userID,
 			Limit:  int32(limit),
 		})
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"posts":   posts,
-			"limit":   limit,
-			"offset":  offset,
-			"hasMore": len(posts) == limit,
-		})
+		// Convert to the offset version structure for consistency
+		posts = make([]database.GetPostsForUserWithOffsetRow, len(postsOrig))
+		for i, post := range postsOrig {
+			posts[i] = database.GetPostsForUserWithOffsetRow{
+				ID:          post.ID,
+				CreatedAt:   post.CreatedAt,
+				UpdatedAt:   post.UpdatedAt,
+				Title:       post.Title,
+				Url:         post.Url,
+				Description: post.Description,
+				PublishedAt: post.PublishedAt,
+				FeedName:    post.FeedName,
+			}
+		}
 	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Enhance posts with bookmark and read status
+	type EnhancedPost struct {
+		database.GetPostsForUserWithOffsetRow
+		IsBookmarked bool `json:"is_bookmarked"`
+		IsRead       bool `json:"is_read"`
+	}
+
+	enhancedPosts := make([]EnhancedPost, len(posts))
+	for i, post := range posts {
+		// Check if bookmarked
+		isBookmarked, err := s.db.IsPostBookmarked(context.Background(), database.IsPostBookmarkedParams{
+			UserID: userID,
+			PostID: post.ID,
+		})
+		if err != nil {
+			isBookmarked = false // Default to false on error
+		}
+
+		// Check if read
+		isRead, err := s.db.IsPostRead(context.Background(), database.IsPostReadParams{
+			UserID: userID,
+			PostID: post.ID,
+		})
+		if err != nil {
+			isRead = false // Default to false on error
+		}
+
+		enhancedPosts[i] = EnhancedPost{
+			GetPostsForUserWithOffsetRow: post,
+			IsBookmarked:                 isBookmarked,
+			IsRead:                       isRead,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"posts":   enhancedPosts,
+		"limit":   limit,
+		"offset":  offset,
+		"hasMore": len(posts) == limit,
+	})
+}
+
+// Bookmark handlers
+func (s *Server) createBookmark(c *gin.Context) {
+	var req struct {
+		UserID string `json:"user_id" binding:"required"`
+		PostID string `json:"post_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	postID, err := uuid.Parse(req.PostID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+
+	now := time.Now()
+	bookmark, err := s.db.CreateBookmark(c.Request.Context(), database.CreateBookmarkParams{
+		ID:        uuid.New(),
+		CreatedAt: now,
+		UpdatedAt: now,
+		UserID:    userID,
+		PostID:    postID,
+	})
+
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			c.JSON(http.StatusConflict, gin.H{"error": "Post already bookmarked"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create bookmark"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, bookmark)
+}
+
+func (s *Server) deleteBookmark(c *gin.Context) {
+	userIDStr := c.Param("userId")
+	postIDStr := c.Param("postId")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	postID, err := uuid.Parse(postIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+
+	err = s.db.DeleteBookmark(c.Request.Context(), database.DeleteBookmarkParams{
+		UserID: userID,
+		PostID: postID,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete bookmark"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Bookmark deleted successfully"})
+}
+
+func (s *Server) getUserBookmarks(c *gin.Context) {
+	userIDStr := c.Param("userId")
+	limitStr := c.DefaultQuery("limit", "10")
+	offsetStr := c.DefaultQuery("offset", "0")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
+	bookmarks, err := s.db.GetUserBookmarks(c.Request.Context(), database.GetUserBookmarksParams{
+		UserID: userID,
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bookmarks"})
+		return
+	}
+
+	if bookmarks == nil {
+		bookmarks = []database.GetUserBookmarksRow{}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"bookmarks": bookmarks,
+		"hasMore":   len(bookmarks) == limit,
+	})
+}
+
+// Read status handlers
+func (s *Server) markPostRead(c *gin.Context) {
+	var req struct {
+		UserID string `json:"user_id" binding:"required"`
+		PostID string `json:"post_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	postID, err := uuid.Parse(req.PostID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+
+	now := time.Now()
+	postRead, err := s.db.CreatePostRead(c.Request.Context(), database.CreatePostReadParams{
+		ID:        uuid.New(),
+		CreatedAt: now,
+		UpdatedAt: now,
+		UserID:    userID,
+		PostID:    postID,
+		ReadAt:    now,
+	})
+
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			c.JSON(http.StatusConflict, gin.H{"error": "Post already marked as read"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark post as read"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, postRead)
+}
+
+func (s *Server) markPostUnread(c *gin.Context) {
+	userIDStr := c.Param("userId")
+	postIDStr := c.Param("postId")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	postID, err := uuid.Parse(postIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+
+	err = s.db.DeletePostRead(c.Request.Context(), database.DeletePostReadParams{
+		UserID: userID,
+		PostID: postID,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark post as unread"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Post marked as unread successfully"})
 }
 
 // RSS Feed structures for parsing
@@ -457,6 +700,28 @@ type RSSItem struct {
 	Link        string `xml:"link"`
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
+}
+
+// AtomFeed represents an Atom feed structure (used by Reddit, YouTube, etc.)
+type AtomFeed struct {
+	Title       string      `xml:"title"`
+	Link        []AtomLink  `xml:"link"`
+	Description string      `xml:"subtitle"`
+	Entry       []AtomEntry `xml:"entry"`
+}
+
+type AtomLink struct {
+	Href string `xml:"href,attr"`
+	Rel  string `xml:"rel,attr"`
+}
+
+type AtomEntry struct {
+	Title     string     `xml:"title"`
+	Link      []AtomLink `xml:"link"`
+	Content   string     `xml:"content"`
+	Summary   string     `xml:"summary"`
+	Published string     `xml:"published"`
+	Updated   string     `xml:"updated"`
 }
 
 // fetchUserFeeds - API endpoint to fetch new posts for a user's followed feeds
@@ -528,10 +793,20 @@ func (s *Server) scrapeFeedForAPI(feed database.Feed) (int, error) {
 	newPosts := 0
 	for _, item := range feedData.Channel.Item {
 		publishedAt := sql.NullTime{}
-		if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
-			publishedAt = sql.NullTime{
-				Time:  t,
-				Valid: true,
+
+		// Try parsing different date formats
+		if item.PubDate != "" {
+			// Try RFC1123Z first (RSS format)
+			if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
+				publishedAt = sql.NullTime{Time: t, Valid: true}
+			} else if t, err := time.Parse(time.RFC1123, item.PubDate); err == nil {
+				publishedAt = sql.NullTime{Time: t, Valid: true}
+			} else if t, err := time.Parse(time.RFC3339, item.PubDate); err == nil {
+				// Atom format (ISO 8601)
+				publishedAt = sql.NullTime{Time: t, Valid: true}
+			} else if t, err := time.Parse("2006-01-02T15:04:05Z", item.PubDate); err == nil {
+				// Alternative ISO format
+				publishedAt = sql.NullTime{Time: t, Valid: true}
 			}
 		}
 
@@ -568,7 +843,14 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("User-Agent", "gator")
+
+	// Set headers that make the request appear more legitimate to avoid being blocked
+	request.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Gator RSS Reader/1.0; +https://github.com/user/gator)")
+	request.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
+	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	request.Header.Set("Accept-Encoding", "gzip, deflate")
+	request.Header.Set("Cache-Control", "no-cache")
+	request.Header.Set("Connection", "keep-alive")
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	response, err := client.Do(request)
@@ -577,7 +859,18 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 	}
 	defer response.Body.Close()
 
-	body, err := io.ReadAll(response.Body)
+	// Handle gzipped responses
+	var reader io.Reader = response.Body
+	if response.Header.Get("Content-Encoding") == "gzip" {
+		gzipReader, err := gzip.NewReader(response.Body)
+		if err != nil {
+			return nil, err
+		}
+		defer gzipReader.Close()
+		reader = gzipReader
+	}
+
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -586,10 +879,56 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 	bodyStr := string(body)
 	bodyStr = s.cleanXML(bodyStr)
 
+	// Parse the XML - try RSS first, then Atom
 	var feed RSSFeed
 	err = xml.Unmarshal([]byte(bodyStr), &feed)
-	if err != nil {
-		return nil, fmt.Errorf("XML parsing error: %w", err)
+	if err != nil || feed.Channel.Title == "" {
+		// If RSS parsing failed or didn't find channel, try Atom format
+		var atomFeed AtomFeed
+		err = xml.Unmarshal([]byte(bodyStr), &atomFeed)
+		if err != nil {
+			return nil, fmt.Errorf("XML parsing error: %w", err)
+		}
+
+		// Convert Atom to RSS format
+		feed.Channel.Title = atomFeed.Title
+		feed.Channel.Description = atomFeed.Description
+
+		// Find the alternate link
+		for _, link := range atomFeed.Link {
+			if link.Rel == "alternate" || link.Rel == "" {
+				feed.Channel.Link = link.Href
+				break
+			}
+		}
+
+		// Convert entries to items
+		feed.Channel.Item = make([]RSSItem, len(atomFeed.Entry))
+		for i, entry := range atomFeed.Entry {
+			feed.Channel.Item[i].Title = entry.Title
+
+			// Find the entry link
+			for _, link := range entry.Link {
+				if link.Rel == "alternate" || link.Rel == "" {
+					feed.Channel.Item[i].Link = link.Href
+					break
+				}
+			}
+
+			// Use content or summary for description
+			if entry.Content != "" {
+				feed.Channel.Item[i].Description = entry.Content
+			} else {
+				feed.Channel.Item[i].Description = entry.Summary
+			}
+
+			// Use published or updated for date
+			if entry.Published != "" {
+				feed.Channel.Item[i].PubDate = entry.Published
+			} else {
+				feed.Channel.Item[i].PubDate = entry.Updated
+			}
+		}
 	}
 
 	// Unescape HTML entities and clean up descriptions
@@ -610,18 +949,49 @@ func (s *Server) cleanDescription(description string) string {
 		return s.extractHackerNewsDescription(description)
 	}
 
-	// Remove HTML tags
+	// First, unescape HTML entities so we can properly match HTML tags
+	unescaped := html.UnescapeString(description)
+
+	// Remove HTML comments
+	commentRegex := regexp.MustCompile(`<!--[\s\S]*?-->`)
+	unescaped = commentRegex.ReplaceAllString(unescaped, "")
+
+	// Remove Reddit-specific markers
+	unescaped = strings.ReplaceAll(unescaped, "<!-- SC_OFF -->", "")
+	unescaped = strings.ReplaceAll(unescaped, "<!-- SC_ON -->", "")
+
+	// Remove HTML tags - more comprehensive regex
 	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
-	cleaned := htmlTagRegex.ReplaceAllString(description, "")
+	cleaned := htmlTagRegex.ReplaceAllString(unescaped, "")
+
+	// Decode common HTML entities that might remain
+	cleaned = strings.ReplaceAll(cleaned, "&amp;", "&")
+	cleaned = strings.ReplaceAll(cleaned, "&lt;", "<")
+	cleaned = strings.ReplaceAll(cleaned, "&gt;", ">")
+	cleaned = strings.ReplaceAll(cleaned, "&quot;", "\"")
+	cleaned = strings.ReplaceAll(cleaned, "&#39;", "'")
+	cleaned = strings.ReplaceAll(cleaned, "&nbsp;", " ")
 
 	// Remove extra whitespace and newlines
 	cleaned = strings.TrimSpace(cleaned)
 	cleaned = regexp.MustCompile(`\s+`).ReplaceAllString(cleaned, " ")
 
 	// Remove common RSS feed artifacts
-	cleaned = strings.ReplaceAll(cleaned, "&nbsp;", " ")
 	cleaned = strings.ReplaceAll(cleaned, "\n", " ")
 	cleaned = strings.ReplaceAll(cleaned, "\r", " ")
+	cleaned = strings.ReplaceAll(cleaned, "\t", " ")
+
+	// Remove Reddit submission line (submitted by /u/username)
+	submittedRegex := regexp.MustCompile(`\s*submitted by\s+/u/\w+\s*`)
+	cleaned = submittedRegex.ReplaceAllString(cleaned, "")
+
+	// Remove [link] and [comments] markers at the end
+	linkCommentsRegex := regexp.MustCompile(`\s*\[link\]\s*\[comments\]\s*$`)
+	cleaned = linkCommentsRegex.ReplaceAllString(cleaned, "")
+
+	// Clean up any remaining extra spaces
+	cleaned = regexp.MustCompile(`\s+`).ReplaceAllString(cleaned, " ")
+	cleaned = strings.TrimSpace(cleaned)
 
 	return cleaned
 }

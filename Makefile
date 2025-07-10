@@ -40,11 +40,6 @@ frontend-build:
 
 # Run both API and frontend in development
 dev: 
-	@echo "Starting API server..."
-	@go run cmd/api/main.go &
-	@sleep 2
-	@echo "Starting frontend..."
-	@cd frontend && npm run dev
-
-# don't forget to use make <command> to run the commands
-# e.g. make migrate-up, make run-cli, make run-api, make dev
+	@echo "Starting both API and frontend..."
+	@echo "Use Ctrl+C to stop both services"
+	@bash -c 'trap "kill 0" EXIT; go run cmd/api/main.go & cd frontend && npm run dev'

@@ -1,5 +1,122 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { feedAPI, followAPI } from '../api/client'
+import { normalizeUrl } from '../utils/feedUtils'
+
+// Reusable components moved outside to prevent re-creation on every render
+const CollapsibleSection = ({ title, icon, count, isExpanded, onToggle, children, bgColor = "bg-white" }) => (
+  <div className={`${bgColor} rounded-lg shadow-sm border border-gray-200 mb-6`}>
+    <button
+      onClick={onToggle}
+      className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200 rounded-t-lg"
+    >
+      <div className="flex items-center space-x-3">
+        <span className="text-xl">{icon}</span>
+        <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+        {count !== undefined && (
+          <span className="bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">
+            {count}
+          </span>
+        )}
+      </div>
+      <span className={`text-gray-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+        ▼
+      </span>
+    </button>
+    {isExpanded && (
+      <div className="border-t border-gray-200">
+        {children}
+      </div>
+    )}
+  </div>
+)
+
+const FeedCard = ({ feed, showActions = true, showFollowButton = true, currentUser, isFollowing, editingFeed, editFeedData, setEditFeedData, loading, startEditFeed, cancelEditFeed, saveEditFeed, unfollowFeed, followFeed, deleteFeed }) => {
+  const feedUrl = feed.url || feed.Url
+  const feedName = feed.name || feed.Name
+  const userName = feed.username || feed.Username
+  const feedId = feed.id || feed.ID
+  const feedUserId = feed.user_id || feed.UserID
+  const currentUserId = currentUser?.ID || currentUser?.id
+  const isOwnFeed = feedUserId === currentUserId
+  const isFollowingFeed = isFollowing(feedUrl)
+
+  return (
+    <div className="p-4 border-b border-gray-100 last:border-b-0">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-gray-900 truncate">{feedName}</h4>
+          <p className="text-sm text-gray-600 truncate">{feedUrl}</p>
+          <p className="text-xs text-gray-500 mt-1">by {userName}</p>
+        </div>
+        <div className="flex items-center space-x-2 ml-4">
+          {showFollowButton && (
+            <button
+              onClick={() => isFollowingFeed ? unfollowFeed(feedUrl) : followFeed(feedUrl)}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
+                isFollowingFeed
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+              }`}
+            >
+              {isFollowingFeed ? 'Unfollow' : 'Follow'}
+            </button>
+          )}
+          {showActions && isOwnFeed && (
+            <>
+              <button
+                onClick={() => startEditFeed(feed)}
+                className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 text-sm font-medium transition-colors duration-200"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => deleteFeed(feedId)}
+                className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm font-medium transition-colors duration-200"
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {editingFeed?.id === feedId && (
+        <form onSubmit={saveEditFeed} className="mt-4 space-y-3 p-3 bg-gray-50 rounded-md">
+          <input
+            type="text"
+            value={editFeedData.name}
+            onChange={(e) => setEditFeedData({ ...editFeedData, name: e.target.value })}
+            placeholder="Feed name"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="url"
+            value={editFeedData.url}
+            onChange={(e) => setEditFeedData({ ...editFeedData, url: e.target.value })}
+            placeholder="Feed URL"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <div className="flex space-x-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 font-medium"
+            >
+              {loading ? 'Updating...' : 'Update'}
+            </button>
+            <button
+              type="button"
+              onClick={cancelEditFeed}
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
 
 function Feeds({ currentUser }) {
   const [feeds, setFeeds] = useState([])
@@ -9,6 +126,13 @@ function Feeds({ currentUser }) {
   const [error, setError] = useState('')
   const [editingFeed, setEditingFeed] = useState(null)
   const [editFeedData, setEditFeedData] = useState({ name: '', url: '' })
+
+  const [expandedSections, setExpandedSections] = useState({
+    create: false,
+    myFeeds: true,
+    following: true,
+    allFeeds: false
+  })
 
   const fetchUserFollows = useCallback(async () => {
     if (!currentUser) return
@@ -54,12 +178,16 @@ function Feeds({ currentUser }) {
     setLoading(true)
     setError('')
     try {
+      // Normalize the URL (just add protocol if missing)
+      const normalizedUrl = normalizeUrl(newFeed.url)
+      
       await feedAPI.create({
         name: newFeed.name,
-        url: newFeed.url,
+        url: normalizedUrl,
         user_id: userId
       })
       setNewFeed({ name: '', url: '' })
+      setExpandedSections(prev => ({ ...prev, create: false }))
       fetchFeeds()
     } catch (error) {
       console.error('Error creating feed:', error)
@@ -167,20 +295,57 @@ function Feeds({ currentUser }) {
     }
   }
 
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
+
+  // Organize feeds by category
+  const { myFeeds, followingFeeds, otherFeeds } = useMemo(() => {
+    if (!currentUser || !feeds.length) return { myFeeds: [], followingFeeds: [], otherFeeds: [] }
+    
+    const currentUserId = currentUser.ID || currentUser.id
+    const followedFeedUrls = (userFollows || []).map(follow => {
+      const feed = feeds.find(f => (f.name || f.Name) === follow.FeedName)
+      return feed ? (feed.url || feed.Url) : null
+    }).filter(Boolean)
+
+    const myFeeds = feeds.filter(feed => 
+      (feed.user_id || feed.UserID) === currentUserId
+    )
+
+    // Following feeds includes ALL followed feeds, even ones created by the user
+    const followingFeeds = feeds.filter(feed => 
+      followedFeedUrls.includes(feed.url || feed.Url)
+    )
+
+    // Other feeds are those not followed and not created by the user
+    const otherFeeds = feeds.filter(feed => 
+      !followedFeedUrls.includes(feed.url || feed.Url) &&
+      (feed.user_id || feed.UserID) !== currentUserId
+    )
+
+    return { myFeeds, followingFeeds, otherFeeds }
+  }, [currentUser, feeds, userFollows])
+
   // Check if user is following a feed by matching feed URLs in userFollows
-  const isFollowing = (feedUrl) => {
+  const isFollowing = useCallback((feedUrl) => {
     if (!userFollows || !Array.isArray(userFollows)) return false
     return userFollows.some(follow => {
       // Find the feed that matches this follow
       const feed = feeds.find(f => (f.name || f.Name) === follow.FeedName)
       return feed && (feed.url || feed.Url) === feedUrl
     })
-  }
+  }, [userFollows, feeds])
 
   if (!currentUser) {
     return (
       <div className="px-4 py-6 sm:px-0">
-        <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <div className="text-6xl mb-4">👥</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No User Selected</h3>
           <p className="text-gray-500">Please select a user first to manage feeds.</p>
         </div>
       </div>
@@ -189,8 +354,11 @@ function Feeds({ currentUser }) {
 
   return (
     <div className="px-4 py-6 sm:px-0">
-      <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-6">Feed Management</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="text-2xl">📡</div>
+          <h2 className="text-2xl font-bold text-gray-900">Feed Management</h2>
+        </div>
         
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -204,164 +372,176 @@ function Feeds({ currentUser }) {
           </div>
         )}
         
-        {/* Create Feed Form */}
-        <div className="mb-8 bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-4">Add New Feed</h3>
-          <form onSubmit={createFeed} className="space-y-3">
-            <input
-              type="text"
-              value={newFeed.name}
-              onChange={(e) => setNewFeed({ ...newFeed, name: e.target.value })}
-              placeholder="Feed name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="url"
-              value={newFeed.url}
-              onChange={(e) => setNewFeed({ ...newFeed, url: e.target.value })}
-              placeholder="Feed URL"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'Adding...' : 'Add Feed'}
-            </button>
-          </form>
-        </div>
-
-        {/* User's Followed Feeds */}
-        {userFollows && userFollows.length > 0 && (
-          <div className="mb-8 bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-medium mb-4">Your Followed Feeds</h3>
-            <div className="space-y-2">
-              {userFollows.map((follow) => {
-                // Find the full feed info to get the URL
-                const feed = feeds.find(f => (f.name || f.Name) === follow.FeedName)
-                const feedUrl = feed ? (feed.url || feed.Url) : null
-                
-                return (
-                  <div key={follow.ID} className="flex justify-between items-center p-2 bg-green-50 rounded">
-                    <div>
-                      <span className="text-green-800">{follow.FeedName}</span>
-                      {feedUrl && <div className="text-xs text-gray-600">{feedUrl}</div>}
-                    </div>
-                    <button
-                      onClick={() => feedUrl && unfollowFeed(feedUrl)}
-                      className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 text-sm"
-                      disabled={!feedUrl}
-                    >
-                      Unfollow
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
+        {/* Create New Feed Section */}
+        <CollapsibleSection
+          title="Create New Feed"
+          icon="➕"
+          isExpanded={expandedSections.create}
+          onToggle={() => toggleSection('create')}
+          bgColor="bg-blue-50"
+        >
+          <div className="p-4">
+            <form onSubmit={createFeed} className="space-y-3">
+              <input
+                type="text"
+                value={newFeed.name}
+                onChange={(e) => setNewFeed({ ...newFeed, name: e.target.value })}
+                placeholder="Feed name (e.g., 'Tech News')"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <input
+                type="url"
+                value={newFeed.url}
+                onChange={(e) => setNewFeed({ ...newFeed, url: e.target.value })}
+                placeholder="Feed URL or website URL (e.g., 'https://reddit.com/r/technology' or 'https://example.com/rss')"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors duration-200"
+                >
+                  {loading ? '🔄 Adding...' : '➕ Add Feed'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewFeed({ name: '', url: '' })
+                    setError('')
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200"
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
           </div>
-        )}
+        </CollapsibleSection>
 
-        {/* All Feeds */}
-        <div className="bg-white rounded-lg shadow">
-          <h3 className="text-lg font-medium p-4 border-b">All Feeds</h3>
-          <div className="divide-y divide-gray-200">
-            {feeds.length === 0 ? (
-              <p className="p-4 text-gray-500">No feeds found</p>
+        {/* My Feeds Section */}
+        <CollapsibleSection
+          title="Feeds I Created"
+          icon="🏗️"
+          count={myFeeds.length}
+          isExpanded={expandedSections.myFeeds}
+          onToggle={() => toggleSection('myFeeds')}
+          bgColor="bg-green-50"
+        >
+          <div>
+            {myFeeds.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="text-4xl mb-2">📝</div>
+                <p>You haven't created any feeds yet.</p>
+                <p className="text-sm mt-1">Click "Create New Feed" above to get started!</p>
+              </div>
             ) : (
-              feeds.map((feed, index) => {
-                const feedUrl = feed.url || feed.Url
-                const feedName = feed.name || feed.Name
-                const userName = feed.username || feed.Username
-                const feedId = feed.id || feed.ID
-                const feedUserId = feed.user_id || feed.UserID
-                const currentUserId = currentUser?.ID || currentUser?.id
-                const isOwnFeed = feedUserId === currentUserId
-                
-                return (
-                  <div key={feedUrl || index} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{feedName}</h4>
-                        <p className="text-sm text-gray-600">{feedUrl}</p>
-                        <p className="text-xs text-gray-500">by {userName}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => 
-                            isFollowing(feedUrl) 
-                              ? unfollowFeed(feedUrl)
-                              : followFeed(feedUrl)
-                          }
-                          className={`px-3 py-1 rounded-md text-sm ml-4 ${
-                            isFollowing(feedUrl)
-                              ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                          }`}
-                        >
-                          {isFollowing(feedUrl) ? 'Unfollow' : 'Follow'}
-                        </button>
-                        {isOwnFeed && (
-                          <>
-                            <button
-                              onClick={() => startEditFeed(feed)}
-                              className="ml-2 px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-sm"
-                              title="Edit feed"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => deleteFeed(feedId)}
-                              className="ml-2 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm"
-                              title="Delete feed"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Edit Feed Form - appears only when editing this feed */}
-                    {editingFeed?.id === (feed.ID || feed.id) && (
-                      <form onSubmit={saveEditFeed} className="mt-4 space-y-3">
-                        <input
-                          type="text"
-                          value={editFeedData.name}
-                          onChange={(e) => setEditFeedData({ ...editFeedData, name: e.target.value })}
-                          placeholder="Feed name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <input
-                          type="url"
-                          value={editFeedData.url}
-                          onChange={(e) => setEditFeedData({ ...editFeedData, url: e.target.value })}
-                          placeholder="Feed URL"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <div className="flex space-x-2">
-                          <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                          >
-                            {loading ? 'Updating...' : 'Update Feed'}
-                          </button>
-                          <button
-                            onClick={cancelEditFeed}
-                            className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-                )
-              })
+              myFeeds.map((feed, index) => (
+                <FeedCard 
+                  key={feed.url || index} 
+                  feed={feed} 
+                  showFollowButton={true}
+                  showActions={true}
+                  currentUser={currentUser}
+                  isFollowing={isFollowing}
+                  editingFeed={editingFeed}
+                  editFeedData={editFeedData}
+                  setEditFeedData={setEditFeedData}
+                  loading={loading}
+                  startEditFeed={startEditFeed}
+                  cancelEditFeed={cancelEditFeed}
+                  saveEditFeed={saveEditFeed}
+                  unfollowFeed={unfollowFeed}
+                  followFeed={followFeed}
+                  deleteFeed={deleteFeed}
+                />
+              ))
             )}
           </div>
-        </div>
+        </CollapsibleSection>
+
+        {/* Following Feeds Section */}
+        <CollapsibleSection
+          title="Feeds I'm Following"
+          icon="👥"
+          count={followingFeeds.length}
+          isExpanded={expandedSections.following}
+          onToggle={() => toggleSection('following')}
+          bgColor="bg-yellow-50"
+        >
+          <div>
+            {followingFeeds.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="text-4xl mb-2">🔍</div>
+                <p>You're not following any feeds yet.</p>
+                <p className="text-sm mt-1">Browse "All Other Feeds" below to find interesting content!</p>
+              </div>
+            ) : (
+              followingFeeds.map((feed, index) => (
+                <FeedCard 
+                  key={feed.url || index} 
+                  feed={feed} 
+                  showFollowButton={true}
+                  showActions={false}
+                  currentUser={currentUser}
+                  isFollowing={isFollowing}
+                  editingFeed={editingFeed}
+                  editFeedData={editFeedData}
+                  setEditFeedData={setEditFeedData}
+                  loading={loading}
+                  startEditFeed={startEditFeed}
+                  cancelEditFeed={cancelEditFeed}
+                  saveEditFeed={saveEditFeed}
+                  unfollowFeed={unfollowFeed}
+                  followFeed={followFeed}
+                  deleteFeed={deleteFeed}
+                />
+              ))
+            )}
+          </div>
+        </CollapsibleSection>
+
+        {/* All Other Feeds Section */}
+        <CollapsibleSection
+          title="All Other Feeds"
+          icon="🌐"
+          count={otherFeeds.length}
+          isExpanded={expandedSections.allFeeds}
+          onToggle={() => toggleSection('allFeeds')}
+          bgColor="bg-gray-50"
+        >
+          <div>
+            {otherFeeds.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="text-4xl mb-2">📡</div>
+                <p>No other feeds available.</p>
+                <p className="text-sm mt-1">All feeds are either created by you or you're already following them!</p>
+              </div>
+            ) : (
+              otherFeeds.map((feed, index) => (
+                <FeedCard 
+                  key={feed.url || index} 
+                  feed={feed} 
+                  showFollowButton={true}
+                  showActions={false}
+                  currentUser={currentUser}
+                  isFollowing={isFollowing}
+                  editingFeed={editingFeed}
+                  editFeedData={editFeedData}
+                  setEditFeedData={setEditFeedData}
+                  loading={loading}
+                  startEditFeed={startEditFeed}
+                  cancelEditFeed={cancelEditFeed}
+                  saveEditFeed={saveEditFeed}
+                  unfollowFeed={unfollowFeed}
+                  followFeed={followFeed}
+                  deleteFeed={deleteFeed}
+                />
+              ))
+            )}
+          </div>
+        </CollapsibleSection>
       </div>
     </div>
   )
