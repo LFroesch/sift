@@ -1,0 +1,43 @@
+Starting Gator at Wed Jul  9 21:47:29 PDT 2025
+Starting both API and frontend...
+Use Ctrl+C to stop both services
+
+> frontend@0.0.0 dev
+> vite
+
+
+  VITE v4.5.14  ready in 392 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+2025/07/09 21:47:30 Starting API server on port 8080...
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/users                --> github.com/LFroesch/Gator/api.(*Server).createUser-fm (4 handlers)
+[GIN-debug] GET    /api/users                --> github.com/LFroesch/Gator/api.(*Server).getUsers-fm (4 handlers)
+[GIN-debug] GET    /api/users/:name          --> github.com/LFroesch/Gator/api.(*Server).getUser-fm (4 handlers)
+[GIN-debug] PUT    /api/users/:userId        --> github.com/LFroesch/Gator/api.(*Server).updateUser-fm (4 handlers)
+[GIN-debug] DELETE /api/users/:userId        --> github.com/LFroesch/Gator/api.(*Server).deleteUser-fm (4 handlers)
+[GIN-debug] POST   /api/feeds                --> github.com/LFroesch/Gator/api.(*Server).createFeed-fm (4 handlers)
+[GIN-debug] GET    /api/feeds                --> github.com/LFroesch/Gator/api.(*Server).getAllFeeds-fm (4 handlers)
+[GIN-debug] PUT    /api/feeds/:feedId        --> github.com/LFroesch/Gator/api.(*Server).updateFeed-fm (4 handlers)
+[GIN-debug] DELETE /api/feeds/:feedId        --> github.com/LFroesch/Gator/api.(*Server).deleteFeed-fm (4 handlers)
+[GIN-debug] POST   /api/follows              --> github.com/LFroesch/Gator/api.(*Server).followFeed-fm (4 handlers)
+[GIN-debug] GET    /api/follows/:userId      --> github.com/LFroesch/Gator/api.(*Server).getUserFollows-fm (4 handlers)
+[GIN-debug] DELETE /api/follows/:userId      --> github.com/LFroesch/Gator/api.(*Server).unfollowFeed-fm (4 handlers)
+[GIN-debug] GET    /api/posts/:userId        --> github.com/LFroesch/Gator/api.(*Server).getUserPosts-fm (4 handlers)
+[GIN-debug] POST   /api/bookmarks            --> github.com/LFroesch/Gator/api.(*Server).createBookmark-fm (4 handlers)
+[GIN-debug] DELETE /api/bookmarks/:userId/:postId --> github.com/LFroesch/Gator/api.(*Server).deleteBookmark-fm (4 handlers)
+[GIN-debug] GET    /api/bookmarks/:userId    --> github.com/LFroesch/Gator/api.(*Server).getUserBookmarks-fm (4 handlers)
+[GIN-debug] POST   /api/reads                --> github.com/LFroesch/Gator/api.(*Server).markPostRead-fm (4 handlers)
+[GIN-debug] DELETE /api/reads/:userId/:postId --> github.com/LFroesch/Gator/api.(*Server).markPostUnread-fm (4 handlers)
+[GIN-debug] POST   /api/feeds/fetch/:userId  --> github.com/LFroesch/Gator/api.(*Server).fetchUserFeeds-fm (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN] 2025/07/09 - 21:47:46 | 403 |       4.859µs |             ::1 | GET      "/api/users"
+[GIN] 2025/07/09 - 21:47:46 | 403 |       7.575µs |             ::1 | GET      "/api/users"
