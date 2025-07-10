@@ -1,0 +1,23 @@
+{
+  "name": "gator",
+  "version": "1.0.0",
+  "description": "An RSS feed aggregator/reader written in Go.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LFroesch/Gator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LFroesch/Gator/issues"
+  },
+  "homepage": "https://github.com/LFroesch/Gator#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

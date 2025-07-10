@@ -19,6 +19,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 type Server struct {
@@ -716,12 +718,13 @@ type AtomLink struct {
 }
 
 type AtomEntry struct {
-	Title     string     `xml:"title"`
-	Link      []AtomLink `xml:"link"`
-	Content   string     `xml:"content"`
-	Summary   string     `xml:"summary"`
-	Published string     `xml:"published"`
-	Updated   string     `xml:"updated"`
+	Title            string     `xml:"title"`
+	Link             []AtomLink `xml:"link"`
+	Content          string     `xml:"content"`
+	Summary          string     `xml:"summary"`
+	Published        string     `xml:"published"`
+	Updated          string     `xml:"updated"`
+	MediaDescription string     `xml:"http://search.yahoo.com/mrss/ description"`
 }
 
 // fetchUserFeeds - API endpoint to fetch new posts for a user's followed feeds
@@ -875,8 +878,23 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 		return nil, err
 	}
 
-	// Clean up common XML issues before parsing
+	// Handle different character encodings
 	bodyStr := string(body)
+	if strings.Contains(bodyStr, `encoding="ISO-8859-1"`) {
+		decoder := charmap.ISO8859_1.NewDecoder()
+		utf8Body, err := io.ReadAll(transform.NewReader(strings.NewReader(bodyStr), decoder))
+		if err != nil {
+			log.Printf("Warning: Failed to convert from ISO-8859-1: %v", err)
+		} else {
+			// Fix the encoding declaration in the XML
+			bodyStr = string(utf8Body)
+			bodyStr = strings.Replace(bodyStr, `encoding="ISO-8859-1"`, `encoding="UTF-8"`, 1)
+			body = []byte(bodyStr)
+		}
+	}
+
+	// Clean up common XML issues before parsing
+	bodyStr = string(body)
 	bodyStr = s.cleanXML(bodyStr)
 
 	// Parse the XML - try RSS first, then Atom
@@ -915,11 +933,13 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 				}
 			}
 
-			// Use content or summary for description
+			// Use content, summary, or media description for description
 			if entry.Content != "" {
 				feed.Channel.Item[i].Description = entry.Content
-			} else {
+			} else if entry.Summary != "" {
 				feed.Channel.Item[i].Description = entry.Summary
+			} else if entry.MediaDescription != "" {
+				feed.Channel.Item[i].Description = entry.MediaDescription
 			}
 
 			// Use published or updated for date

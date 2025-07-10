@@ -16,6 +16,8 @@ import (
 
 	"github.com/LFroesch/Gator/internal/database"
 	"github.com/google/uuid"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 type RSSFeed struct {
@@ -48,12 +50,13 @@ type AtomLink struct {
 }
 
 type AtomEntry struct {
-	Title     string     `xml:"title"`
-	Link      []AtomLink `xml:"link"`
-	Content   string     `xml:"content"`
-	Summary   string     `xml:"summary"`
-	Published string     `xml:"published"`
-	Updated   string     `xml:"updated"`
+	Title            string     `xml:"title"`
+	Link             []AtomLink `xml:"link"`
+	Content          string     `xml:"content"`
+	Summary          string     `xml:"summary"`
+	Published        string     `xml:"published"`
+	Updated          string     `xml:"updated"`
+	MediaDescription string     `xml:"http://search.yahoo.com/mrss/ description"`
 }
 
 // cleanDescription removes HTML tags and cleans up feed descriptions
@@ -100,7 +103,7 @@ func cleanDescription(description string) string {
 	return cleaned
 }
 
-func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
+func FetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	// We'll need to:
 	// 1. Create an HTTP request
 	request, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
@@ -140,6 +143,21 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Handle different character encodings
+	bodyStr := string(body)
+	if strings.Contains(bodyStr, `encoding="ISO-8859-1"`) {
+		decoder := charmap.ISO8859_1.NewDecoder()
+		utf8Body, err := io.ReadAll(transform.NewReader(strings.NewReader(bodyStr), decoder))
+		if err != nil {
+			log.Printf("Warning: Failed to convert from ISO-8859-1: %v", err)
+		} else {
+			// Fix the encoding declaration in the XML
+			bodyStr = string(utf8Body)
+			bodyStr = strings.Replace(bodyStr, `encoding="ISO-8859-1"`, `encoding="UTF-8"`, 1)
+			body = []byte(bodyStr)
+		}
+	}
 	// 4. Parse the XML - try RSS first, then Atom
 	var feed RSSFeed
 	err = xml.Unmarshal(body, &feed)
@@ -176,11 +194,13 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 				}
 			}
 
-			// Use content or summary for description
+			// Use content, summary, or media description for description
 			if entry.Content != "" {
 				feed.Channel.Item[i].Description = entry.Content
-			} else {
+			} else if entry.Summary != "" {
 				feed.Channel.Item[i].Description = entry.Summary
+			} else if entry.MediaDescription != "" {
+				feed.Channel.Item[i].Description = entry.MediaDescription
 			}
 
 			// Use published or updated for date
@@ -236,7 +256,7 @@ func scrapeFeed(db *database.Queries, feed database.Feed) {
 		return
 	}
 
-	feedData, err := fetchFeed(context.Background(), feed.Url)
+	feedData, err := FetchFeed(context.Background(), feed.Url)
 	if err != nil {
 		log.Printf("Couldn't collect feed %s: %v", feed.Name, err)
 		return

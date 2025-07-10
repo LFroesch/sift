@@ -39,7 +39,5 @@ frontend-build:
 	cd frontend && npm run build
 
 # Run both API and frontend in development
-dev: 
-	@echo "Starting both API and frontend..."
-	@echo "Use Ctrl+C to stop both services"
-	@bash -c 'trap "kill 0" EXIT; go run cmd/api/main.go & cd frontend && npm run dev'
+dev:
+	npx concurrently "go run cmd/api/main.go" "cd frontend && npm run dev"
