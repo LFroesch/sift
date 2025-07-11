@@ -21,8 +21,8 @@ func main() {
 	dbQueries := database.New(db)
 	server := api.NewServer(dbQueries)
 
-	log.Println("Starting API server on port 8080...")
-	if err := server.Start("8080"); err != nil {
+	log.Println("Starting API server on port 5005...")
+	if err := server.Start("5005"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

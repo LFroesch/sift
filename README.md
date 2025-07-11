@@ -6,9 +6,10 @@ An RSS feed aggregator/reader written in Go.
 
 After any changes:
 ```bash
-go build -o gator
-./gator <command>
-./gator help # for info
+go build -o bin/gator-api cmd/api/main.go
+go build -o bin/gator cmd/cli/main.go    
+./bin/gator <command>
+./bin/gator help # for info
 ```
 
 ## Commands
