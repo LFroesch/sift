@@ -5,6 +5,7 @@ import Users from './components/Users'
 import Feeds from './components/Feeds'
 import Posts from './components/Posts'
 import Bookmarks from './components/Bookmarks'
+import Admin from './components/Admin'
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null)
@@ -33,15 +34,16 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navigation currentUser={currentUser} setCurrentUser={updateCurrentUser} />
 
-      <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <Routes>
           <Route path="/" element={<Users currentUser={currentUser} setCurrentUser={updateCurrentUser} />} />
           <Route path="/feeds" element={<Feeds currentUser={currentUser} />} />
           <Route path="/posts" element={<Posts currentUser={currentUser} />} />
           <Route path="/bookmarks" element={<Bookmarks currentUser={currentUser} />} />
+          <Route path="/admin" element={<Admin currentUser={currentUser} />} />
         </Routes>
       </main>
     </div>

@@ -43,6 +43,8 @@ export const followAPI = {
 export const postAPI = {
   getUserPosts: (userId, limit = 10, offset = 0) => 
     apiClient.get(`/posts/${userId}?limit=${limit}&offset=${offset}`),
+  getUserPostsByFeed: (userId, feedId, limit = 10, offset = 0) => 
+    apiClient.get(`/posts/${userId}?limit=${limit}&offset=${offset}&feed_id=${feedId}`),
   fetchUserFeeds: (userId) =>
     apiClient.post(`/feeds/fetch/${userId}`),
 }
@@ -63,6 +65,11 @@ export const readStatusAPI = {
     apiClient.post('/reads', readData),
   markUnread: (userId, postId) =>
     apiClient.delete(`/reads/${userId}/${postId}`),
+}
+
+// Admin API
+export const adminAPI = {
+  deletePosts: () => apiClient.delete('/admin/posts'),
 }
 
 export default apiClient

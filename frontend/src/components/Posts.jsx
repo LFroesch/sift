@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { postAPI, bookmarkAPI, readStatusAPI } from '../api/client'
+import { postAPI, bookmarkAPI, readStatusAPI, followAPI } from '../api/client'
 
 function Posts({ currentUser }) {
   const [posts, setPosts] = useState([])
+  const [userFeeds, setUserFeeds] = useState([])
+  const [selectedFeed, setSelectedFeed] = useState('all')
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(false)
   const [fetchingFeeds, setFetchingFeeds] = useState(false)
@@ -16,16 +18,49 @@ function Posts({ currentUser }) {
   
   const POSTS_PER_LOAD = 10
 
-  // Reset everything when user changes
+  // Load user feeds when component mounts or user changes
   useEffect(() => {
     if (currentUser) {
-      setPosts([])
-      setOffset(0)
-      setHasMore(true)
-      setError('')
-      loadInitialPosts()
+      loadUserFeeds()
+      resetAndLoadPosts()
     }
   }, [currentUser])
+
+  // Reload posts when selected feed changes
+  useEffect(() => {
+    if (currentUser) {
+      resetAndLoadPosts()
+    }
+  }, [selectedFeed])
+
+  const loadUserFeeds = async () => {
+    if (!currentUser) return
+    
+    const userId = currentUser.ID || currentUser.id
+    if (!userId) return
+
+    try {
+      const response = await followAPI.getUserFollows(userId)
+      const feeds = response.data || []
+      // Sort feeds alphabetically by name
+      const sortedFeeds = feeds.sort((a, b) => {
+        const nameA = (a.feed_name || a.FeedName || '').toLowerCase()
+        const nameB = (b.feed_name || b.FeedName || '').toLowerCase()
+        return nameA.localeCompare(nameB)
+      })
+      setUserFeeds(sortedFeeds)
+    } catch (error) {
+      console.error('Error fetching user feeds:', error)
+    }
+  }
+
+  const resetAndLoadPosts = () => {
+    setPosts([])
+    setOffset(0)
+    setHasMore(true)
+    setError('')
+    loadInitialPosts()
+  }
 
   const loadInitialPosts = async () => {
     if (!currentUser) return
@@ -36,9 +71,13 @@ function Posts({ currentUser }) {
     setInitialLoading(true)
     setError('')
     try {
-      const response = await postAPI.getUserPosts(userId, POSTS_PER_LOAD, 0)
+      let response
+      if (selectedFeed === 'all') {
+        response = await postAPI.getUserPosts(userId, POSTS_PER_LOAD, 0)
+      } else {
+        response = await postAPI.getUserPostsByFeed(userId, selectedFeed, POSTS_PER_LOAD, 0)
+      }
       
-      // Handle different response formats
       let postsData = []
       let hasMoreData = false
       
@@ -56,8 +95,6 @@ function Posts({ currentUser }) {
       setPosts(postsData)
       setOffset(POSTS_PER_LOAD)
       setHasMore(hasMoreData)
-      
-      console.log(`Initial load: ${postsData.length} posts, hasMore: ${hasMoreData}`)
     } catch (error) {
       console.error('Error fetching initial posts:', error)
       setError('Failed to fetch posts')
@@ -74,11 +111,13 @@ function Posts({ currentUser }) {
     
     setLoading(true)
     try {
-      console.log(`Requesting posts with offset: ${offset}, limit: ${POSTS_PER_LOAD}`)
-      const response = await postAPI.getUserPosts(userId, POSTS_PER_LOAD, offset)
-      console.log('Full API response:', response.data)
+      let response
+      if (selectedFeed === 'all') {
+        response = await postAPI.getUserPosts(userId, POSTS_PER_LOAD, offset)
+      } else {
+        response = await postAPI.getUserPostsByFeed(userId, selectedFeed, POSTS_PER_LOAD, offset)
+      }
       
-      // Handle different response formats more safely
       let newPosts = []
       let apiHasMore = false
       
@@ -86,50 +125,35 @@ function Posts({ currentUser }) {
         newPosts = response.data.posts
         apiHasMore = response.data.hasMore || false
       } else if (response.data.posts === null) {
-        // API returns posts: null when there are no more posts
         newPosts = []
         apiHasMore = response.data.hasMore || false
       } else if (Array.isArray(response.data)) {
         newPosts = response.data
         apiHasMore = newPosts.length === POSTS_PER_LOAD
-      } else {
-        console.error('Unexpected API response format:', response.data)
-        setHasMore(false)
-        return
       }
       
-      console.log(`Parsed ${newPosts.length} posts from response, API hasMore: ${apiHasMore}`)
-      
-      // If no new posts and API says no more, try fetching fresh content from RSS feeds
       if (newPosts.length === 0 && !apiHasMore) {
-        console.log('No more posts in database, fetching fresh content from RSS feeds...')
+        console.log('No more posts, trying to fetch fresh content...')
         try {
           const fetchResponse = await postAPI.fetchUserFeeds(userId)
-          console.log('Feed fetch response:', fetchResponse.data)
-          
           if (fetchResponse.data.newPosts > 0) {
-            // New posts were found, try loading again
-            console.log(`Found ${fetchResponse.data.newPosts} new posts, retrying...`)
-            const retryResponse = await postAPI.getUserPosts(userId, POSTS_PER_LOAD, offset)
+            const retryResponse = selectedFeed === 'all' 
+              ? await postAPI.getUserPosts(userId, POSTS_PER_LOAD, offset)
+              : await postAPI.getUserPostsByFeed(userId, selectedFeed, POSTS_PER_LOAD, offset)
             
             if (retryResponse.data.posts && Array.isArray(retryResponse.data.posts) && retryResponse.data.posts.length > 0) {
               newPosts = retryResponse.data.posts
               apiHasMore = retryResponse.data.hasMore || retryResponse.data.posts.length === POSTS_PER_LOAD
-              console.log(`Retry successful: got ${newPosts.length} posts`)
             } else {
-              // Still no posts after fetching
               setHasMore(false)
               return
             }
           } else {
-            // No new posts found in RSS feeds either
-            console.log('No new posts found in RSS feeds')
             setHasMore(false)
             return
           }
         } catch (fetchError) {
           console.error('Error fetching feeds:', fetchError)
-          // Continue with original empty result
           setHasMore(false)
           return
         }
@@ -140,17 +164,14 @@ function Posts({ currentUser }) {
         setOffset(prevOffset => prevOffset + newPosts.length)
       }
       
-      // Use API's hasMore flag if available, otherwise fall back to length check
       setHasMore(apiHasMore)
-      
-      console.log(`Loaded ${newPosts.length} more posts, offset now: ${offset + newPosts.length}, hasMore: ${apiHasMore}`)
     } catch (error) {
       console.error('Error fetching more posts:', error)
       setError('Failed to load more posts')
     } finally {
       setLoading(false)
     }
-  }, [currentUser, loading, hasMore, offset])
+  }, [currentUser, loading, hasMore, offset, selectedFeed])
 
   // Intersection Observer for infinite scroll
   const lastPostElementRef = useCallback(node => {
@@ -202,11 +223,7 @@ function Posts({ currentUser }) {
   }
 
   const refreshPosts = () => {
-    setPosts([])
-    setOffset(0)
-    setHasMore(true)
-    setError('')
-    loadInitialPosts()
+    resetAndLoadPosts()
   }
 
   const fetchFreshPosts = async () => {
@@ -216,38 +233,29 @@ function Posts({ currentUser }) {
     if (!userId) return
 
     setFetchingFeeds(true)
-    setFetchProgress({ current: 0, total: 20 })
+    setFetchProgress({ current: 0, total: 5 })
     setError('')
     
     let currentIteration = 0
     const maxIterations = 5
     let totalNewPosts = 0
 
-    console.log('Starting aggregate fetch process...')
-
     const performFetch = async () => {
       try {
         currentIteration++
         setFetchProgress({ current: currentIteration, total: maxIterations })
         
-        console.log(`Fetch iteration ${currentIteration}/${maxIterations}`)
         const fetchResponse = await postAPI.fetchUserFeeds(userId)
-        console.log('Feed fetch response:', fetchResponse.data)
-        
         if (fetchResponse.data.newPosts > 0) {
           totalNewPosts += fetchResponse.data.newPosts
-          console.log(`Found ${fetchResponse.data.newPosts} new posts (total: ${totalNewPosts})`)
         }
-        
       } catch (error) {
         console.error(`Error in fetch iteration ${currentIteration}:`, error)
       }
     }
 
-    // Start the interval
     fetchIntervalRef.current = setInterval(performFetch, 1000)
     
-    // Set timeout to stop after 20 seconds
     fetchTimeoutRef.current = setTimeout(() => {
       if (fetchIntervalRef.current) {
         clearInterval(fetchIntervalRef.current)
@@ -255,17 +263,14 @@ function Posts({ currentUser }) {
       }
       
       setFetchingFeeds(false)
-      console.log(`Aggregate fetch completed. Total new posts: ${totalNewPosts}`)
       
       if (totalNewPosts > 0) {
-        // Refresh the posts to show new content
-        refreshPosts()
+        resetAndLoadPosts()
       } else {
         setError('No new posts found in RSS feeds')
       }
     }, 5000)
 
-    // Perform first fetch immediately
     await performFetch()
   }
 
@@ -394,187 +399,260 @@ function Posts({ currentUser }) {
 
   return (
     <div className="px-4 py-6 sm:px-0">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-3">
-            <div className="text-2xl">📰</div>
-            <h2 className="text-2xl font-bold text-gray-900">Latest Posts</h2>
-          </div>
-          <div className="flex gap-2">
-            {fetchingFeeds ? (
-              <>
-                <button
-                  onClick={fetchFreshPosts}
-                  disabled={true}
-                  className="px-4 py-2 bg-green-100 text-green-800 rounded-md disabled:opacity-50 relative"
-                >
-                  <div className="flex items-center gap-2">
-                    <span>Fetching... ({fetchProgress.current}/{fetchProgress.total})</span>
-                    <div className="w-12 h-2 bg-green-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-600 transition-all duration-300"
-                        style={{ width: `${(fetchProgress.current / fetchProgress.total) * 100}%` }}
-                      />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="text-3xl">📰</div>
+              <div>
+                <h2 className="text-2xl font-bold">Latest Posts</h2>
+                <p className="text-blue-100">Stay updated with your feeds</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {fetchingFeeds ? (
+                <>
+                  <button
+                    disabled={true}
+                    className="px-4 py-2 bg-white/20 text-white rounded-lg disabled:opacity-50 relative"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Fetching... ({fetchProgress.current}/{fetchProgress.total})</span>
+                      <div className="w-12 h-2 bg-white/30 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-white transition-all duration-300"
+                          style={{ width: `${(fetchProgress.current / fetchProgress.total) * 100}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </button>
-                <button
-                  onClick={stopFetching}
-                  className="px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200"
-                >
-                  Stop
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={fetchFreshPosts}
-                  disabled={initialLoading}
-                  className="px-4 py-2 bg-green-100 text-green-800 rounded-md hover:bg-green-200 disabled:opacity-50"
-                >
-                  Fetch Fresh Posts
-                </button>
-                <button
-                  onClick={refreshPosts}
-                  disabled={initialLoading}
-                  className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 disabled:opacity-50"
-                >
-                  {initialLoading ? 'Loading...' : 'Refresh'}
-                </button>
-              </>
-            )}
+                  </button>
+                  <button
+                    onClick={stopFetching}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    Stop
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={fetchFreshPosts}
+                    disabled={initialLoading}
+                    className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 disabled:opacity-50 transition-colors backdrop-blur-sm"
+                  >
+                    🔄 Fetch Fresh Posts
+                  </button>
+                  <button
+                    onClick={resetAndLoadPosts}
+                    disabled={initialLoading}
+                    className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 disabled:opacity-50 transition-colors backdrop-blur-sm"
+                  >
+                    {initialLoading ? 'Loading...' : '↻ Refresh'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700">{error}</p>
-            <button 
-              onClick={() => setError('')}
-              className="text-sm text-red-600 hover:text-red-800 mt-1"
+        {/* Feed Filter Tabs */}
+        <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+          <div className="flex items-center flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedFeed('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                selectedFeed === 'all'
+                  ? 'bg-blue-100 text-blue-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
-              Dismiss
+              📑 All Feeds
             </button>
+            {userFeeds.map((feed) => (
+              <button
+                key={feed.ID || feed.id}
+                onClick={() => setSelectedFeed(feed.feed_id || feed.FeedID)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                  selectedFeed === (feed.feed_id || feed.FeedID)
+                    ? 'bg-blue-100 text-blue-700 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                {feed.feed_name || feed.FeedName}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
-        {initialLoading ? (
-          <div className="flex justify-center items-center h-32">
-            <div className="text-gray-500">Loading posts...</div>
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <p className="text-gray-500">No posts found. Try following some feeds first!</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {posts.map((post, index) => {
-              const isLast = posts.length === index + 1
-              return (
-                <article 
-                  key={`${post.id}-${index}`}
-                  ref={isLast ? lastPostElementRef : null}
-                  className="bg-white rounded-lg shadow p-6"
+        {/* Content */}
+        <div className="p-6">
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <div className="text-red-600">❌</div>
+                <p className="text-red-700">{error}</p>
+                <button 
+                  onClick={() => setError('')}
+                  className="ml-auto text-sm text-red-600 hover:text-red-800"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <h3 className={`text-lg font-medium mb-1 ${post.is_read ? 'text-gray-500' : 'text-gray-900'}`}>
-                        {post.title || post.Title}
-                      </h3>
-                      <div className="flex items-center text-sm text-gray-500 space-x-4">
-                        <span>From: {post.feed_name || post.FeedName}</span>
-                        <span>•</span>
-                        <span>{formatDate(post.published_at || post.PublishedAt)}</span>
-                        {post.is_read && <span className="text-green-600 font-medium">• Read</span>}
-                        {post.is_bookmarked && <span className="text-yellow-600 font-medium">• Bookmarked</span>}
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {initialLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="text-gray-500">Loading posts...</div>
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="bg-gray-50 rounded-lg p-8 text-center">
+              <div className="text-4xl mb-3">📰</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No posts found</h3>
+              <p className="text-gray-500">
+                {selectedFeed === 'all' 
+                  ? 'Try following some feeds first!' 
+                  : 'No posts available for this feed. Try fetching fresh posts!'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {posts.map((post, index) => {
+                const isLast = posts.length === index + 1
+                return (
+                  <article 
+                    key={`${post.id}-${index}`}
+                    ref={isLast ? lastPostElementRef : null}
+                    className={`rounded-xl border shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group ${
+                      post.is_read 
+                        ? 'bg-gray-300 border-gray-100 opacity-80' 
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <div className="p-5">
+                      <div className="space-y-4">
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => toggleBookmark(post)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                              post.is_bookmarked
+                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 shadow-sm'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                            }`}
+                          >
+                            {post.is_bookmarked ? '🔖 Saved' : '📑 Save'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              markAsRead(post)
+                              window.open(post.url || post.Url, '_blank', 'noopener,noreferrer')
+                            }}
+                            className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 text-xs font-medium transition-all duration-200 flex-1 hover:shadow-sm"
+                          >
+                            📖 Read Article
+                          </button>
+                          <button
+                            onClick={() => toggleReadStatus(post)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                              post.is_read
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-green-100 text-green-800 hover:bg-green-200 shadow-sm'
+                            }`}
+                          >
+                            {post.is_read ? '↶ Unread' : '✓ Mark Read'}
+                          </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="space-y-3">
+                          <h3 className={`text-sm font-bold leading-tight line-clamp-3 ${
+                            post.is_read ? 'text-gray-500' : 'text-gray-900'
+                          } group-hover:text-blue-700 transition-colors duration-200`}>
+                            {post.title || post.Title}
+                          </h3>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center text-xs text-gray-600 space-x-2">
+                              <span className="flex items-center bg-blue-50 px-2 py-1 rounded-full">
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1.5"></span>
+                                <span className="font-medium">{post.feed_name || post.FeedName}</span>
+                              </span>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-gray-500">{formatDate(post.published_at || post.PublishedAt)}</span>
+                            </div>
+                            
+                            {(post.is_read || post.is_bookmarked) && (
+                              <div className="flex items-center text-xs space-x-2">
+                                {post.is_read && (
+                                  <span className="bg-green-50 text-green-700 px-2 py-1 rounded-full font-medium">
+                                    ✓ Read
+                                  </span>
+                                )}
+                                {post.is_bookmarked && (
+                                  <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full font-medium">
+                                    🔖 Bookmarked
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {(post.description?.String || post.Description?.String) && (
+                            <div className="text-gray-600 text-xs leading-relaxed">
+                              <p className="line-clamp-4">
+                                {(() => {
+                                  const description = post.description?.String || post.Description?.String || ''
+                                  
+                                  const stripHTML = (html) => {
+                                    const tmp = document.createElement('div')
+                                    tmp.innerHTML = html
+                                    return tmp.textContent || tmp.innerText || ''
+                                  }
+                                  
+                                  const cleanedDescription = stripHTML(description)
+                                    .replace(/&amp;/g, '&')
+                                    .replace(/&lt;/g, '<')
+                                    .replace(/&gt;/g, '>')
+                                    .replace(/&quot;/g, '"')
+                                    .replace(/&#39;/g, "'")
+                                    .replace(/&nbsp;/g, ' ')
+                                    .replace(/\s+/g, ' ')
+                                    .trim()
+                                  
+                                  return cleanedDescription.length > 180 
+                                    ? `${cleanedDescription.substring(0, 180)}...`
+                                    : cleanedDescription
+                                })()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0 ml-4">
-                      <button
-                        onClick={() => toggleBookmark(post)}
-                        className={`px-3 py-1 rounded-md text-sm ${
-                          post.is_bookmarked
-                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                        }`}
-                      >
-                        {post.is_bookmarked ? 'Remove Bookmark' : 'Add to Bookmarks'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          markAsRead(post)
-                          window.open(post.url || post.Url, '_blank', 'noopener,noreferrer')
-                        }}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 text-sm"
-                      >
-                        Read More
-                      </button>
-                      <button
-                        onClick={() => toggleReadStatus(post)}
-                        className={`px-3 py-1 rounded-md text-sm ${
-                          post.is_read
-                            ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                            : 'bg-green-100 text-green-800 hover:bg-green-200'
-                        }`}
-                      >
-                        {post.is_read ? 'Mark Unread' : 'Mark Read'}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {(post.description?.String || post.Description?.String) && (
-                    <div className="text-gray-700 text-sm leading-relaxed">
-                      <p className="line-clamp-3">
-                        {(() => {
-                          const description = post.description?.String || post.Description?.String || ''
-                          
-                          // Helper function to strip HTML tags
-                          const stripHTML = (html) => {
-                            const tmp = document.createElement('div')
-                            tmp.innerHTML = html
-                            return tmp.textContent || tmp.innerText || ''
-                          }
-                          
-                          // Clean up HTML tags and entities
-                          const cleanedDescription = stripHTML(description)
-                            .replace(/&amp;/g, '&')
-                            .replace(/&lt;/g, '<')
-                            .replace(/&gt;/g, '>')
-                            .replace(/&quot;/g, '"')
-                            .replace(/&#39;/g, "'")
-                            .replace(/&nbsp;/g, ' ')
-                            .replace(/\s+/g, ' ')
-                            .trim()
-                          
-                          return cleanedDescription.length > 200 
-                            ? `${cleanedDescription.substring(0, 200)}...`
-                            : cleanedDescription
-                        })()}
-                      </p>
-                    </div>
-                  )}
-                </article>
-              )
-            })}
+                  </article>
+                )
+              })}
+            </div>
+          )}
 
-            {/* Loading indicator for infinite scroll */}
-            {loading && (
-              <div className="flex justify-center items-center py-8">
-                <div className="text-gray-500">Loading more posts...</div>
-              </div>
-            )}
+          {loading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="text-gray-500">Loading more posts...</div>
+            </div>
+          )}
 
-            {/* End of posts indicator */}
-            {!hasMore && posts.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">You've reached the end! 🎉</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  {posts.length} posts loaded total
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+          {!hasMore && posts.length > 0 && (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2">🎉</div>
+              <p className="text-gray-500 font-medium">You've reached the end!</p>
+              <p className="text-sm text-gray-400 mt-1">
+                {posts.length} posts loaded total
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

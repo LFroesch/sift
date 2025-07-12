@@ -12,6 +12,9 @@ go build -o bin/gator cmd/cli/main.go
 ./bin/gator help # for info
 ```
 
+## To Reset Your Posts (DANGER)
+DELETE FROM posts;
+
 ## Commands
 
 ### User Management

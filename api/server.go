@@ -79,6 +79,9 @@ func (s *Server) Start(port string) error {
 
 		// Feed fetch route
 		api.POST("/feeds/fetch/:userId", s.fetchUserFeeds)
+
+		// Admin routes
+		api.DELETE("/admin/posts", s.deleteAllPosts)
 	}
 
 	return r.Run(":" + port)
@@ -414,37 +417,76 @@ func (s *Server) getUserPosts(c *gin.Context) {
 		return
 	}
 
+	// Check for feed_id filter
+	feedIDStr := c.Query("feed_id")
+	var feedID *uuid.UUID
+	if feedIDStr != "" {
+		parsedFeedID, err := uuid.Parse(feedIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
+			return
+		}
+		feedID = &parsedFeedID
+	}
+
 	var posts []database.GetPostsForUserWithOffsetRow
-	// Use offset-based pagination if offset is provided
-	if offset > 0 {
-		posts, err = s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
+
+	if feedID != nil {
+		// Filter by specific feed - we'll need to create a new query for this
+		// For now, get all posts and filter them (not ideal but works)
+		allPosts, err := s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
 			UserID: userID,
-			Limit:  int32(limit),
+			Limit:  int32(limit * 10), // Get more to filter
 			Offset: int32(offset),
-		})
-	} else {
-		// Use the original query for backward compatibility
-		postsOrig, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
-			UserID: userID,
-			Limit:  int32(limit),
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Convert to the offset version structure for consistency
-		posts = make([]database.GetPostsForUserWithOffsetRow, len(postsOrig))
-		for i, post := range postsOrig {
-			posts[i] = database.GetPostsForUserWithOffsetRow{
-				ID:          post.ID,
-				CreatedAt:   post.CreatedAt,
-				UpdatedAt:   post.UpdatedAt,
-				Title:       post.Title,
-				Url:         post.Url,
-				Description: post.Description,
-				PublishedAt: post.PublishedAt,
-				FeedName:    post.FeedName,
+		// Filter posts by feed ID
+		filteredPosts := make([]database.GetPostsForUserWithOffsetRow, 0)
+		for _, post := range allPosts {
+			if post.FeedID == *feedID {
+				filteredPosts = append(filteredPosts, post)
+				if len(filteredPosts) >= limit {
+					break
+				}
+			}
+		}
+		posts = filteredPosts
+	} else {
+		// Use offset-based pagination if offset is provided
+		if offset > 0 {
+			posts, err = s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
+				UserID: userID,
+				Limit:  int32(limit),
+				Offset: int32(offset),
+			})
+		} else {
+			// Use the original query for backward compatibility
+			postsOrig, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+				UserID: userID,
+				Limit:  int32(limit),
+			})
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			// Convert to the offset version structure for consistency
+			posts = make([]database.GetPostsForUserWithOffsetRow, len(postsOrig))
+			for i, post := range postsOrig {
+				posts[i] = database.GetPostsForUserWithOffsetRow{
+					ID:          post.ID,
+					CreatedAt:   post.CreatedAt,
+					UpdatedAt:   post.UpdatedAt,
+					Title:       post.Title,
+					Url:         post.Url,
+					Description: post.Description,
+					PublishedAt: post.PublishedAt,
+					FeedName:    post.FeedName,
+				}
 			}
 		}
 	}
@@ -1094,4 +1136,21 @@ func (s *Server) extractGitHubRepoInfo(url string) string {
 		return fmt.Sprintf("%s/%s", matches[1], matches[2])
 	}
 	return url
+}
+
+// Admin handlers
+func (s *Server) deleteAllPosts(c *gin.Context) {
+	// Delete all posts using the generated method
+	err := s.db.DeleteAllPosts(context.Background())
+	if err != nil {
+		log.Printf("Error deleting all posts: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete posts"})
+		return
+	}
+
+	log.Printf("Admin: All posts deleted from database")
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "All posts deleted successfully",
+	})
 }
