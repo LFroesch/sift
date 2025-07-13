@@ -273,3 +273,1082 @@ npx concurrently "go run cmd/api/main.go" "cd frontend && npm run dev"
 [0] [GIN] 2025/07/11 - 16:43:37 | 201 |    7.864613ms |             ::1 | POST     "/api/reads"
 [0] [GIN] 2025/07/11 - 16:45:04 | 200 |     908.367µs |             ::1 | GET      "/api/users"
 [0] [GIN] 2025/07/11 - 16:45:04 | 200 |     503.691µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/11 - 17:09:08 | 200 |     757.154µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/11 - 17:09:08 | 200 |     446.174µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/11 - 17:09:10 | 200 |    1.350624ms |             ::1 | GET      "/api/feeds"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] [GIN] 2025/07/11 - 17:09:10 | 200 |     626.801µs |             ::1 | GET      "/api/feeds"
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 17:09:10 | 200 |    1.494768ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 17:09:10 | 200 |     1.18333ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 17:09:12 | 200 |    1.280725ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 17:09:12 | 200 |    1.133779ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 17:09:12 | 200 |   11.370231ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/11 - 17:09:12 | 200 |    9.663781ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/11 - 17:09:12 | 200 |    9.379342ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/11 - 17:09:12 | 200 |    9.537197ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 17:09:14 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 17:09:14 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 17:09:14 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 17:09:14 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 17:09:15 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed r/2007scape scraped, 2 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 17:09:16 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 17:09:16 | 200 |   1.81225256s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 17:09:16 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 17:09:16 | 200 |  2.865103056s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 17:09:17 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 17:09:17 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 17:09:17 | 200 |  1.680359046s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 17:09:18 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 17:09:18 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 17:09:18 | 200 |  1.805933033s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 17:09:19 | 200 |    8.577183ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 17:09:19 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 17:09:19 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 17:09:19 | 200 |   1.79576545s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 17:09:20 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 17:09:20 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 17:09:20 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 17:09:20 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 17:09:20 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 17:09:20 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 17:09:20 | 200 |  1.599538406s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 18:39:22 | 200 |    13.87915ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 18:39:22 | 200 |   26.003636ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 18:39:23 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 18:39:23 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 18:39:23 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 18:39:23 Feed Youtube: Savix scraped, 1 new posts added
+[0] 2025/07/11 18:39:23 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 18:39:23 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 18:39:24 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 18:39:24 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 18:39:24 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 18:39:24 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 18:39:24 Feed Hacker News scraped, 2 new posts added
+[0] 2025/07/11 18:39:24 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 18:39:24 Feed TechCrunch scraped, 1 new posts added
+[0] 2025/07/11 18:39:24 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 18:39:24 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 18:39:25 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 18:39:25 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 18:39:25 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 18:39:25 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 18:39:25 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 18:39:25 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 18:39:25 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 18:39:26 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 18:39:27 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed r/2007scape scraped, 1 new posts added
+[0] 2025/07/11 18:39:28 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 18:39:28 Feed NPR News scraped, 1 new posts added
+[0] 2025/07/11 18:39:29 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 18:39:29 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 18:39:29 Feed CNET scraped, 1 new posts added
+[0] [GIN] 2025/07/11 - 18:39:29 | 200 |  4.484486691s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 18:39:29 | 200 |   10.864998ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 18:39:30 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 18:39:30 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 18:39:30 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 18:39:30 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 18:39:30 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 18:39:30 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 18:39:30 | 200 |  3.697358771s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 18:39:30 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 18:39:30 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 18:39:30 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 18:39:31 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 18:39:31 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 18:39:31 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 18:39:31 | 200 |  8.359976563s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 18:39:31 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 18:39:31 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 18:39:31 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 18:39:31 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 18:39:32 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 18:39:32 | 200 |  8.190595764s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 18:39:33 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 18:39:33 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 18:39:33 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 18:39:33 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 18:39:33 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 18:39:33 | 200 |  7.786833045s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 18:39:37 Error scraping feed r/2007scape: couldn't fetch feed r/2007scape: XML parsing error: EOF
+[0] 2025/07/11 18:39:37 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 18:39:37 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 18:39:37 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 18:39:37 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 18:39:37 | 200 |   9.66236322s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 18:39:53 | 200 |   10.153418ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=10"
+[0] [GIN] 2025/07/11 - 18:39:57 | 204 |       7.614µs |             ::1 | OPTIONS  "/api/bookmarks"
+[0] [GIN] 2025/07/11 - 18:39:57 | 201 |    5.679989ms |             ::1 | POST     "/api/bookmarks"
+[0] [GIN] 2025/07/11 - 18:39:59 | 201 |    5.134473ms |             ::1 | POST     "/api/reads"
+[0] [GIN] 2025/07/11 - 18:41:04 | 200 |    9.256641ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=20"
+[0] [GIN] 2025/07/11 - 18:41:17 | 200 |    9.778937ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=098781bc-6779-4fdb-9451-c3c81e8100d8"
+[0] [GIN] 2025/07/11 - 18:41:17 | 200 |   10.590443ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=55aad4c7-7634-4e36-8c02-16f4515bf999"
+[0] [GIN] 2025/07/11 - 18:41:32 | 200 |    8.485661ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=10&feed_id=55aad4c7-7634-4e36-8c02-16f4515bf999"
+[0] 2025/07/11 19:14:51 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:14:51 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:14:51 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:14:52 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:14:53 Feed r/2007scape scraped, 2 new posts added
+[0] 2025/07/11 19:14:53 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:14:54 | 200 |  3.277615994s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:14:54 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:14:54 | 200 |  2.321217166s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:14:54 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:14:54 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:14:55 | 200 |  1.796289346s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:14:55 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:14:55 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:14:56 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:14:56 | 200 |   1.76938152s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 19:14:57 | 200 |    9.403845ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=55aad4c7-7634-4e36-8c02-16f4515bf999"
+[0] 2025/07/11 19:14:57 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:14:57 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:14:57 | 200 |  1.717399512s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:14:58 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:14:58 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:14:58 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:14:58 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:14:58 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:14:58 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:14:58 | 200 |  1.610976655s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:26:10 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:26:10 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:26:11 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:26:12 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:26:12 Feed Hacker News scraped, 1 new posts added
+[0] 2025/07/11 19:26:12 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:26:12 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:26:12 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:26:12 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:26:13 | 200 |  3.367226044s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:26:13 Feed CNET scraped, 0 new posts added
+[0] 2025/07/11 19:26:13 Feed Hacker News scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:26:13 | 200 |  2.409445587s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:26:13 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:26:14 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:26:14 | 200 |  1.862672334s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:26:15 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:26:15 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:26:15 | 200 |  1.760402904s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 19:26:16 | 200 |    9.567969ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=55aad4c7-7634-4e36-8c02-16f4515bf999"
+[0] 2025/07/11 19:26:16 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:26:16 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:26:16 | 200 |   1.66634623s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:26:17 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:26:17 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:26:17 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:26:17 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:26:17 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:26:17 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:26:17 | 200 |  1.771676878s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:53:27 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:53:28 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:53:29 Feed Hacker News scraped, 2 new posts added
+[0] 2025/07/11 19:53:29 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:53:29 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:53:29 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:53:29 Feed JavaScript Reddit Simple scraped, 1 new posts added
+[0] 2025/07/11 19:53:29 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:53:30 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:53:30 | 200 |   3.33360164s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:53:30 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:53:30 | 200 |  2.420036878s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:53:31 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:53:31 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:53:31 | 200 |  1.879023227s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:53:32 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed r/2007scape scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:53:32 | 200 |   12.292599ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=55aad4c7-7634-4e36-8c02-16f4515bf999"
+[0] 2025/07/11 19:53:32 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:53:32 | 200 |  1.748867789s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:53:32 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 19:53:32 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:53:33 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:53:33 | 200 |   1.64915485s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 19:53:33 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 19:53:34 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 19:53:34 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 19:53:34 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 19:53:34 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 19:53:34 | 200 |  1.784069077s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 21:46:05 | 200 |   26.877052ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 21:46:05 | 200 |   38.982188ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 21:46:06 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 21:46:06 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Hacker News scraped, 3 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 21:46:07 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed JavaScript Reddit Simple scraped, 1 new posts added
+[0] 2025/07/11 21:46:08 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed r/2007scape scraped, 3 new posts added
+[0] 2025/07/11 21:46:08 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed NPR News scraped, 2 new posts added
+[0] 2025/07/11 21:46:08 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 21:46:08 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed CNET scraped, 3 new posts added
+[0] [GIN] 2025/07/11 - 21:46:09 | 200 |  1.966594417s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 21:46:09 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 21:46:09 | 200 |  3.038543143s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 21:46:09 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 21:46:09 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 21:46:10 | 200 |  1.794695919s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 21:46:10 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 21:46:10 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 21:46:11 | 200 |  1.729493872s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 21:46:11 | 200 |   11.005488ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 21:46:11 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 21:46:11 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 21:46:12 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 21:46:12 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 21:46:12 | 200 |   1.81700926s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 21:46:12 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 21:46:12 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 21:46:12 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 21:46:13 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 21:46:13 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 21:46:13 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 21:46:13 | 200 |  1.761821079s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 23:00:58 | 200 |   18.164017ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 23:00:58 | 200 |   27.362901ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 23:01:00 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 23:01:01 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed TechCrunch scraped, 1 new posts added
+[0] 2025/07/11 23:01:02 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 23:01:02 Feed r/2007scape scraped, 1 new posts added
+[0] 2025/07/11 23:01:03 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed CNET scraped, 1 new posts added
+[0] [GIN] 2025/07/11 - 23:01:03 | 200 |  3.046199507s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 23:01:03 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 23:01:03 | 200 |  2.083724672s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 23:01:03 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 23:01:03 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 23:01:04 | 200 |   2.20368525s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 23:01:04 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 23:01:04 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 23:01:05 | 200 |  1.896221336s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 23:01:05 | 200 |    9.908068ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/11 23:01:05 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/11 23:01:05 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 23:01:06 | 200 |  1.697665508s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/11 23:01:06 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/11 23:01:06 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/11 23:01:07 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/11 23:01:07 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/11 23:01:07 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/11 - 23:01:07 | 200 |  1.664184114s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 23:01:09 | 204 |       9.968µs |             ::1 | OPTIONS  "/api/reads"
+[0] [GIN] 2025/07/11 - 23:01:09 | 201 |   64.163462ms |             ::1 | POST     "/api/reads"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/11 - 23:14:04 | 200 |    1.856878ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/11 - 23:14:04 | 200 |    9.368801ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+                                                                                                                                                                     Starting Gator at Sat Jul 12 11:28:24 PDT 2025
+npx concurrently "go run cmd/api/main.go" "cd frontend && npm run dev"
+[1] 
+[1] > frontend@0.0.0 dev
+[1] > vite
+[1] 
+[1] 
+[1]   VITE v4.5.14  ready in 702 ms
+[1] 
+[1]   ➜  Local:   http://localhost:5004/
+[1]   ➜  Network: use --host to expose
+[0] 2025/07/12 11:28:26 Starting API server on port 5005...
+[0] [GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+[0] 
+[0] [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+[0]  - using env:	export GIN_MODE=release
+[0]  - using code:	gin.SetMode(gin.ReleaseMode)
+[0] 
+[0] [GIN-debug] POST   /api/users                --> github.com/LFroesch/Gator/api.(*Server).createUser-fm (4 handlers)
+[0] [GIN-debug] GET    /api/users                --> github.com/LFroesch/Gator/api.(*Server).getUsers-fm (4 handlers)
+[0] [GIN-debug] GET    /api/users/:name          --> github.com/LFroesch/Gator/api.(*Server).getUser-fm (4 handlers)
+[0] [GIN-debug] PUT    /api/users/:userId        --> github.com/LFroesch/Gator/api.(*Server).updateUser-fm (4 handlers)
+[0] [GIN-debug] DELETE /api/users/:userId        --> github.com/LFroesch/Gator/api.(*Server).deleteUser-fm (4 handlers)
+[0] [GIN-debug] POST   /api/feeds                --> github.com/LFroesch/Gator/api.(*Server).createFeed-fm (4 handlers)
+[0] [GIN-debug] GET    /api/feeds                --> github.com/LFroesch/Gator/api.(*Server).getAllFeeds-fm (4 handlers)
+[0] [GIN-debug] PUT    /api/feeds/:feedId        --> github.com/LFroesch/Gator/api.(*Server).updateFeed-fm (4 handlers)
+[0] [GIN-debug] DELETE /api/feeds/:feedId        --> github.com/LFroesch/Gator/api.(*Server).deleteFeed-fm (4 handlers)
+[0] [GIN-debug] POST   /api/follows              --> github.com/LFroesch/Gator/api.(*Server).followFeed-fm (4 handlers)
+[0] [GIN-debug] GET    /api/follows/:userId      --> github.com/LFroesch/Gator/api.(*Server).getUserFollows-fm (4 handlers)
+[0] [GIN-debug] DELETE /api/follows/:userId      --> github.com/LFroesch/Gator/api.(*Server).unfollowFeed-fm (4 handlers)
+[0] [GIN-debug] GET    /api/posts/:userId        --> github.com/LFroesch/Gator/api.(*Server).getUserPosts-fm (4 handlers)
+[0] [GIN-debug] POST   /api/bookmarks            --> github.com/LFroesch/Gator/api.(*Server).createBookmark-fm (4 handlers)
+[0] [GIN-debug] DELETE /api/bookmarks/:userId/:postId --> github.com/LFroesch/Gator/api.(*Server).deleteBookmark-fm (4 handlers)
+[0] [GIN-debug] GET    /api/bookmarks/:userId    --> github.com/LFroesch/Gator/api.(*Server).getUserBookmarks-fm (4 handlers)
+[0] [GIN-debug] POST   /api/reads                --> github.com/LFroesch/Gator/api.(*Server).markPostRead-fm (4 handlers)
+[0] [GIN-debug] DELETE /api/reads/:userId/:postId --> github.com/LFroesch/Gator/api.(*Server).markPostUnread-fm (4 handlers)
+[0] [GIN-debug] POST   /api/feeds/fetch/:userId  --> github.com/LFroesch/Gator/api.(*Server).fetchUserFeeds-fm (4 handlers)
+[0] [GIN-debug] DELETE /api/admin/posts          --> github.com/LFroesch/Gator/api.(*Server).deleteAllPosts-fm (4 handlers)
+[0] [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+[0] Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[0] [GIN-debug] Listening and serving HTTP on :5005
+[0] [GIN] 2025/07/12 - 11:28:48 | 404 |       2.144µs |             ::1 | GET      "/"
+[0] [GIN] 2025/07/12 - 11:28:48 | 404 |       1.803µs |             ::1 | GET      "/favicon.ico"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 11:29:17 | 200 |   63.116911ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 11:29:17 | 200 |   76.010651ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:29:45 | 200 |    2.672144ms |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/12 - 11:29:45 | 200 |     479.817µs |             ::1 | GET      "/api/users"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 11:30:39 | 200 |    1.507116ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 11:30:39 | 200 |     976.707µs |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 11:30:39 | 200 |   11.278359ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:30:39 | 200 |   10.237796ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:30:39 | 200 |    9.897014ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:30:39 | 200 |    9.024935ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/12 11:30:40 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:30:40 Feed Youtube: Guzu Main scraped, 1 new posts added
+[0] 2025/07/12 11:30:40 Feed Youtube: Guzu 2 scraped, 2 new posts added
+[0] 2025/07/12 11:30:40 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:30:41 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:30:41 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:30:41 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:30:41 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:30:41 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:30:41 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:30:41 Feed Hacker News scraped, 3 new posts added
+[0] 2025/07/12 11:30:41 Feed Hacker News scraped, 13 new posts added
+[0] 2025/07/12 11:30:41 Feed TechCrunch scraped, 3 new posts added
+[0] 2025/07/12 11:30:41 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed JavaScript Reddit Simple scraped, 6 new posts added
+[0] 2025/07/12 11:30:42 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed r/2007scape scraped, 14 new posts added
+[0] 2025/07/12 11:30:42 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed NPR News scraped, 10 new posts added
+[0] 2025/07/12 11:30:42 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 11:30:42 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed CNET scraped, 19 new posts added
+[0] [GIN] 2025/07/12 - 11:30:43 | 200 |  3.416086532s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 11:30:43 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:30:43 | 200 |  2.431891006s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 11:30:43 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 11:30:43 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:30:44 | 200 |  2.339302974s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 11:30:44 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 11:30:44 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:30:44 | 200 |  1.605688529s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 11:30:44 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:30:44 | 200 |   23.058696ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/12 11:30:45 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:30:45 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:30:45 | 200 |  1.749477926s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 11:30:46 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 11:30:46 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 11:30:46 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 11:30:46 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 11:30:46 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:30:46 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:30:46 | 200 |  1.835651851s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 11:30:53 | 200 |    2.221314ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=15409f1c-a25c-41ab-b259-a6085afa7021"
+[0] [GIN] 2025/07/12 - 11:30:54 | 200 |    3.256712ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=ab0c2c53-f8ef-40a9-8c33-102f9af5fa85"
+[0] [GIN] 2025/07/12 - 11:30:57 | 200 |     1.76409ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=15409f1c-a25c-41ab-b259-a6085afa7021"
+[0] [GIN] 2025/07/12 - 11:30:58 | 200 |    3.162172ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=ab0c2c53-f8ef-40a9-8c33-102f9af5fa85"
+[0] [GIN] 2025/07/12 - 11:31:02 | 200 |    2.849457ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=bed19654-7287-49a4-94a2-2f5e5e685b38"
+[0] [GIN] 2025/07/12 - 11:31:04 | 200 |    2.448628ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=45802892-2e0f-4297-8e6b-55eeac52a458"
+[0] [GIN] 2025/07/12 - 11:31:05 | 200 |    1.883119ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=cdcf1622-e166-4e1a-8134-60cfa356d5bc"
+[0] [GIN] 2025/07/12 - 11:31:06 | 200 |    1.673099ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=7af14929-4bec-4e56-93ce-25e40dac926d"
+[0] [GIN] 2025/07/12 - 11:31:06 | 200 |    2.352529ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0&feed_id=b52fb631-f6b4-45df-952a-91f566745792"
+[0] [GIN] 2025/07/12 - 11:31:07 | 200 |    9.151201ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:31:10 | 200 |     573.284µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/12 - 11:31:10 | 200 |     709.908µs |             ::1 | GET      "/api/users"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] [GIN] 2025/07/12 - 11:31:11 | 200 |     778.107µs |             ::1 | GET      "/api/feeds"
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 11:31:11 | 200 |     1.25175ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 11:31:11 | 200 |      396.24µs |             ::1 | GET      "/api/feeds"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 11:31:11 | 200 |     875.537µs |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 11:31:12 | 200 |     778.957µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/12 - 11:31:12 | 200 |     550.469µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/12 - 11:31:14 | 200 |  107.293692ms |             ::1 | GET      "/api/users/Gaming YOUTUBE"
+[0] Getting follows for user ID: 3f3fc406-eb22-4376-b6d2-0f3b47da5eac
+[0] [GIN] 2025/07/12 - 11:31:18 | 200 |     573.743µs |             ::1 | GET      "/api/feeds"
+[0] Found 7 follows
+[0] [GIN] 2025/07/12 - 11:31:18 | 200 |    1.026469ms |             ::1 | GET      "/api/follows/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] [GIN] 2025/07/12 - 11:31:18 | 200 |     550.509µs |             ::1 | GET      "/api/feeds"
+[0] Getting follows for user ID: 3f3fc406-eb22-4376-b6d2-0f3b47da5eac
+[0] Found 7 follows
+[0] [GIN] 2025/07/12 - 11:31:18 | 200 |     915.883µs |             ::1 | GET      "/api/follows/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] Getting follows for user ID: 3f3fc406-eb22-4376-b6d2-0f3b47da5eac
+[0] Found 7 follows
+[0] [GIN] 2025/07/12 - 11:31:19 | 200 |    1.076003ms |             ::1 | GET      "/api/follows/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] Getting follows for user ID: 3f3fc406-eb22-4376-b6d2-0f3b47da5eac
+[0] Found 7 follows
+[0] [GIN] 2025/07/12 - 11:31:19 | 200 |     749.842µs |             ::1 | GET      "/api/follows/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] [GIN] 2025/07/12 - 11:31:19 | 200 |    9.691913ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:31:19 | 200 |    8.002082ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:31:19 | 200 |    7.736537ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:31:19 | 200 |     7.59991ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0"
+[0] 2025/07/12 11:31:20 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:20 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:20 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:20 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:20 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:20 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:20 Feed Youtube: OhnePixel scraped, 4 new posts added
+[0] [GIN] 2025/07/12 - 11:31:20 | 200 |  628.033388ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:21 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:21 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:21 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:21 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:21 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:21 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:21 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:21 | 200 |  526.890575ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:22 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:22 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:22 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:22 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:22 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:22 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:22 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:22 | 200 |  524.449842ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:23 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:23 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:23 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:23 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:23 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:23 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:23 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:23 | 200 |  543.902861ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:24 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:24 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:24 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:24 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:24 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:24 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:24 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:24 | 200 |  527.167275ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] [GIN] 2025/07/12 - 11:31:25 | 200 |    8.960223ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:31:25 | 200 |    9.376992ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10"
+[0] 2025/07/12 11:31:25 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:25 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:25 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:25 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:25 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:25 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:25 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:25 | 200 |  532.597362ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] [GIN] 2025/07/12 - 11:31:27 | 200 |    9.193981ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=bed19654-7287-49a4-94a2-2f5e5e685b38"
+[0] [GIN] 2025/07/12 - 11:31:28 | 200 |    8.747697ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=ab0c2c53-f8ef-40a9-8c33-102f9af5fa85"
+[0] [GIN] 2025/07/12 - 11:31:28 | 200 |    8.422987ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10&feed_id=ab0c2c53-f8ef-40a9-8c33-102f9af5fa85"
+[0] [GIN] 2025/07/12 - 11:31:28 | 200 |    8.422931ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=bed19654-7287-49a4-94a2-2f5e5e685b38"
+[0] [GIN] 2025/07/12 - 11:31:29 | 200 |    8.462144ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=45802892-2e0f-4297-8e6b-55eeac52a458"
+[0] [GIN] 2025/07/12 - 11:31:32 | 200 |    5.285623ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=cdcf1622-e166-4e1a-8134-60cfa356d5bc"
+[0] 2025/07/12 11:31:38 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:38 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:38 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:38 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:38 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:38 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:38 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:38 | 200 |   560.54545ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:39 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:39 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:39 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:39 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:39 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:39 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:39 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:39 | 200 |  529.815077ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:40 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:40 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:40 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:40 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:40 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:40 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:40 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:40 | 200 |  526.668602ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:41 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:41 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:41 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:41 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:41 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:41 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:41 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:41 | 200 |  529.366778ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:42 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:42 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:42 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:42 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:42 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:42 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:42 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:42 | 200 |  524.922399ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] 2025/07/12 11:31:43 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 11:31:43 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 11:31:43 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 11:31:43 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 11:31:43 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 11:31:43 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 11:31:43 Feed Youtube: OhnePixel scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 11:31:43 | 200 |  525.739817ms |             ::1 | POST     "/api/feeds/fetch/3f3fc406-eb22-4376-b6d2-0f3b47da5eac"
+[0] [GIN] 2025/07/12 - 11:31:48 | 200 |    8.656065ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=7af14929-4bec-4e56-93ce-25e40dac926d"
+[0] [GIN] 2025/07/12 - 11:31:48 | 200 |    8.436434ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10&feed_id=7af14929-4bec-4e56-93ce-25e40dac926d"
+[0] [GIN] 2025/07/12 - 11:31:49 | 200 |    8.818169ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=2410c0a4-1576-409f-ac7c-e78ddd1b4c6a"
+[0] [GIN] 2025/07/12 - 11:31:49 | 200 |    8.523366ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10&feed_id=2410c0a4-1576-409f-ac7c-e78ddd1b4c6a"
+[0] [GIN] 2025/07/12 - 11:31:50 | 200 |    8.111717ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=b52fb631-f6b4-45df-952a-91f566745792"
+[0] [GIN] 2025/07/12 - 11:31:50 | 200 |    8.287606ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10&feed_id=b52fb631-f6b4-45df-952a-91f566745792"
+[0] [GIN] 2025/07/12 - 11:31:59 | 200 |    8.234537ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=45802892-2e0f-4297-8e6b-55eeac52a458"
+[0] [GIN] 2025/07/12 - 11:31:59 | 200 |    8.294429ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10&feed_id=45802892-2e0f-4297-8e6b-55eeac52a458"
+[0] [GIN] 2025/07/12 - 11:32:01 | 200 |    5.106147ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=cdcf1622-e166-4e1a-8134-60cfa356d5bc"
+[0] [GIN] 2025/07/12 - 11:32:04 | 200 |      8.9902ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0&feed_id=bed19654-7287-49a4-94a2-2f5e5e685b38"
+[0] [GIN] 2025/07/12 - 11:32:04 | 200 |    8.869203ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10&feed_id=bed19654-7287-49a4-94a2-2f5e5e685b38"
+[0] [GIN] 2025/07/12 - 11:32:05 | 200 |    8.921822ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:32:05 | 200 |    8.891155ms |             ::1 | GET      "/api/posts/3f3fc406-eb22-4376-b6d2-0f3b47da5eac?limit=10&offset=10"
+[0] [GIN] 2025/07/12 - 11:32:12 | 204 |      18.024µs |             ::1 | OPTIONS  "/api/reads"
+[0] [GIN] 2025/07/12 - 11:32:12 | 201 |   11.832755ms |             ::1 | POST     "/api/reads"
+[0] [GIN] 2025/07/12 - 11:32:29 | 200 |     501.508µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/12 - 11:32:29 | 200 |     266.889µs |             ::1 | GET      "/api/users"
+[0] [GIN] 2025/07/12 - 11:32:32 | 200 |     811.798µs |             ::1 | GET      "/api/users/ADMIN"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 11:32:39 | 200 |    1.487541ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 11:32:39 | 200 |    1.092435ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 11:32:39 | 200 |   10.275402ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:32:39 | 200 |    8.697613ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:32:39 | 200 |    8.766813ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:32:39 | 200 |    8.732358ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 11:32:46 | 200 |    8.277988ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=10"
+[0] [GIN] 2025/07/12 - 11:33:04 | 200 |    9.253033ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=20"
+[0] [GIN] 2025/07/12 - 11:33:04 | 200 |    8.875896ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=30"
+[0] [GIN] 2025/07/12 - 11:33:07 | 201 |    8.000832ms |             ::1 | POST     "/api/reads"
+[0] [GIN] 2025/07/12 - 11:33:11 | 201 |    4.102823ms |             ::1 | POST     "/api/reads"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 12:02:29 | 200 |    1.489986ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 12:02:29 | 200 |     9.21437ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 20:19:30 | 200 |   20.377643ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 20:19:30 | 200 |   31.040942ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/12 20:19:56 Feed Youtube: Odablock scraped, 1 new posts added
+[0] 2025/07/12 20:19:56 Feed Youtube: Guzu Main scraped, 1 new posts added
+[0] 2025/07/12 20:19:56 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 20:19:56 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 20:19:56 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed Hacker News scraped, 10 new posts added
+[0] 2025/07/12 20:19:57 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed TechCrunch scraped, 2 new posts added
+[0] 2025/07/12 20:19:57 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 20:19:57 Feed JavaScript Reddit Simple scraped, 1 new posts added
+[0] 2025/07/12 20:19:57 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed r/2007scape scraped, 14 new posts added
+[0] 2025/07/12 20:19:58 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed NPR News scraped, 3 new posts added
+[0] 2025/07/12 20:19:58 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 20:19:58 Feed CNET scraped, 7 new posts added
+[0] [GIN] 2025/07/12 - 20:19:58 | 200 |  2.899698002s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 20:19:58 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 20:19:58 | 200 |  1.939504865s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 20:19:58 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 20:19:59 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 20:19:59 | 200 |  1.596368068s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 20:19:59 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 20:20:00 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 20:20:00 | 200 |  1.721076291s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 20:20:00 | 200 |    8.722636ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/12 20:20:00 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed Youtube: Odablock scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed Youtube: Guzu Main scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed Youtube: Guzu 2 scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed Youtube: Savix scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed Youtube: GuzuLIVE scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed Hacker News scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed TechCrunch scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 20:20:01 | 200 |    8.770577ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] 2025/07/12 20:20:01 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 20:20:01 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 20:20:01 | 200 |  1.725800419s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] 2025/07/12 20:20:01 Feed JavaScript Reddit Simple scraped, 0 new posts added
+[0] 2025/07/12 20:20:02 Feed r/2007scape scraped, 0 new posts added
+[0] 2025/07/12 20:20:02 Feed NPR News scraped, 0 new posts added
+[0] 2025/07/12 20:20:02 Feed Youtube: Codesistency scraped, 0 new posts added
+[0] 2025/07/12 20:20:02 Feed Youtube: itsWill scraped, 0 new posts added
+[0] 2025/07/12 20:20:02 Feed CNET scraped, 0 new posts added
+[0] [GIN] 2025/07/12 - 20:20:02 | 200 |  1.676302578s |             ::1 | POST     "/api/feeds/fetch/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 20:20:13 | 204 |      13.816µs |             ::1 | OPTIONS  "/api/reads"
+[0] [GIN] 2025/07/12 - 20:20:13 | 201 |    7.916499ms |             ::1 | POST     "/api/reads"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 20:51:45 | 200 |    1.520494ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 20:51:45 | 200 |   10.889927ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 20:51:50 | 204 |      13.225µs |             ::1 | OPTIONS  "/api/admin/posts"
+[0] 2025/07/12 20:51:50 Admin: All posts deleted from database
+[0] [GIN] 2025/07/12 - 20:51:50 | 200 |    8.994296ms |             ::1 | DELETE   "/api/admin/posts"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 20:51:53 | 200 |    1.093671ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 20:51:53 | 200 |     1.24167ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] Getting follows for user ID: 70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd
+[0] Found 13 follows
+[0] [GIN] 2025/07/12 - 20:51:53 | 200 |    1.162744ms |             ::1 | GET      "/api/follows/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd"
+[0] [GIN] 2025/07/12 - 20:51:53 | 200 |    1.335097ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 20:51:53 | 200 |    1.080827ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 20:51:53 | 200 |    1.025685ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 20:55:35 | 200 |    7.850843ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=0"
+[0] [GIN] 2025/07/12 - 20:55:38 | 200 |     8.65362ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=10"
+[0] [GIN] 2025/07/12 - 20:55:39 | 200 |    7.893974ms |             ::1 | GET      "/api/posts/70bb4db5-d5e2-4c5a-8dcc-2c9dbef5c2dd?limit=10&offset=20"
