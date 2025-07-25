@@ -1,21 +1,60 @@
 # Gator
 
-An RSS feed aggregator/reader written in Go.
+A web-based RSS feed aggregator/reader with a React frontend and Go backend API.
 
-## Usage
+## Features
 
-After any changes:
-```bash
-go build -o bin/gator-api cmd/api/main.go
-go build -o bin/gator cmd/cli/main.go    
-./bin/gator <command>
-./bin/gator help # for info
-```
+- Modern web interface for managing RSS feeds
+- User authentication and management
+- Real-time feed aggregation
+- Post browsing and filtering
+- Responsive design with Tailwind CSS
 
-## To Reset Your Posts (DANGER)
-DELETE FROM posts;
+## Getting Started
 
-## Commands
+### Prerequisites
+- PostgreSQL database
+- Node.js (for frontend development)
+- Go 1.19+ (for backend API)
+
+### Setup
+
+1. **Database Setup**
+   ```bash
+   createdb gator
+   ```
+
+2. **Backend API**
+   ```bash
+   go build -o bin/gator-api cmd/api/main.go
+   ./bin/gator-api
+   ```
+
+3. **Frontend Development**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+4. **Production Build**
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+## Architecture
+
+- **Frontend**: React with Vite, Tailwind CSS, React Router
+- **Backend**: Go REST API with PostgreSQL
+- **Database**: PostgreSQL for feed and user data
+
+---
+
+*Note: This project originally included a CLI interface. For CLI usage, see the legacy commands section below.*
+
+<details>
+<summary>Legacy CLI Commands</summary>
 
 ### User Management
 | Command | Usage | Description |
@@ -37,10 +76,11 @@ DELETE FROM posts;
 | `following` | `./gator following` | Lists current user's followed feeds |
 | `browse` | `./gator browse <limit>` | Lists newest posts (default limit: 2) |
 
-## Setup
+### CLI Setup
+```bash
+go build -o bin/gator cmd/cli/main.go    
+./bin/gator <command>
+./bin/gator help # for info
+```
 
-1. Ensure PostgreSQL is running
-2. Create database: `createdb gator`
-3. Build the application: `go build -o gator`
-4. Register a user: `./gator register <username>`
-5. Login: `./gator login <username>`
+</details>
