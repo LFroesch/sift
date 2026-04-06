@@ -7,39 +7,34 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 const createPost = `-- name: CreatePost :one
-INSERT INTO posts (id, created_at, updated_at, title, url, description, published_at, feed_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, created_at, updated_at, title, url, description, published_at, feed_id
+INSERT INTO posts (title, url, description, published_at, feed_id, thumbnail_url)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, created_at, updated_at, title, url, description, published_at, feed_id, is_read, is_bookmarked, thumbnail_url
 `
 
 type CreatePostParams struct {
-	ID          uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Title       string
-	Url         string
-	Description sql.NullString
-	PublishedAt sql.NullTime
-	FeedID      uuid.UUID
+	Title        string     `json:"title"`
+	Url          string     `json:"url"`
+	Description  *string    `json:"description"`
+	PublishedAt  *time.Time `json:"published_at"`
+	FeedID       uuid.UUID  `json:"feed_id"`
+	ThumbnailUrl *string    `json:"thumbnail_url"`
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
 	row := q.db.QueryRowContext(ctx, createPost,
-		arg.ID,
-		arg.CreatedAt,
-		arg.UpdatedAt,
 		arg.Title,
 		arg.Url,
 		arg.Description,
 		arg.PublishedAt,
 		arg.FeedID,
+		arg.ThumbnailUrl,
 	)
 	var i Post
 	err := row.Scan(
@@ -51,6 +46,9 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		&i.Description,
 		&i.PublishedAt,
 		&i.FeedID,
+		&i.IsRead,
+		&i.IsBookmarked,
+		&i.ThumbnailUrl,
 	)
 	return i, err
 }
@@ -64,41 +62,44 @@ func (q *Queries) DeleteAllPosts(ctx context.Context) error {
 	return err
 }
 
-const getPostsForUser = `-- name: GetPostsForUser :many
-SELECT posts.id, posts.created_at, posts.updated_at, posts.title, posts.url, posts.description, posts.published_at, posts.feed_id, feeds.name AS feed_name FROM posts
-JOIN feed_follows ON feed_follows.feed_id = posts.feed_id
-JOIN feeds ON posts.feed_id = feeds.id
-WHERE feed_follows.user_id = $1
-ORDER BY posts.published_at DESC
-LIMIT $2
+const getBookmarkedPosts = `-- name: GetBookmarkedPosts :many
+SELECT p.id, p.created_at, p.updated_at, p.title, p.url, p.description, p.published_at, p.feed_id, p.is_read, p.is_bookmarked, p.thumbnail_url, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+WHERE p.is_bookmarked = TRUE
+ORDER BY p.published_at DESC NULLS LAST
+LIMIT $1 OFFSET $2
 `
 
-type GetPostsForUserParams struct {
-	UserID uuid.UUID
-	Limit  int32
+type GetBookmarkedPostsParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
-type GetPostsForUserRow struct {
-	ID          uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Title       string
-	Url         string
-	Description sql.NullString
-	PublishedAt sql.NullTime
-	FeedID      uuid.UUID
-	FeedName    string
+type GetBookmarkedPostsRow struct {
+	ID           uuid.UUID  `json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Title        string     `json:"title"`
+	Url          string     `json:"url"`
+	Description  *string    `json:"description"`
+	PublishedAt  *time.Time `json:"published_at"`
+	FeedID       uuid.UUID  `json:"feed_id"`
+	IsRead       bool       `json:"is_read"`
+	IsBookmarked bool       `json:"is_bookmarked"`
+	ThumbnailUrl *string    `json:"thumbnail_url"`
+	FeedName     string     `json:"feed_name"`
 }
 
-func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams) ([]GetPostsForUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUser, arg.UserID, arg.Limit)
+func (q *Queries) GetBookmarkedPosts(ctx context.Context, arg GetBookmarkedPostsParams) ([]GetBookmarkedPostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBookmarkedPosts, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPostsForUserRow
+	var items []GetBookmarkedPostsRow
 	for rows.Next() {
-		var i GetPostsForUserRow
+		var i GetBookmarkedPostsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.CreatedAt,
@@ -108,6 +109,9 @@ func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams
 			&i.Description,
 			&i.PublishedAt,
 			&i.FeedID,
+			&i.IsRead,
+			&i.IsBookmarked,
+			&i.ThumbnailUrl,
 			&i.FeedName,
 		); err != nil {
 			return nil, err
@@ -123,42 +127,109 @@ func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams
 	return items, nil
 }
 
-const getPostsForUserWithOffset = `-- name: GetPostsForUserWithOffset :many
-SELECT posts.id, posts.created_at, posts.updated_at, posts.title, posts.url, posts.description, posts.published_at, posts.feed_id, feeds.name AS feed_name FROM posts
-JOIN feed_follows ON feed_follows.feed_id = posts.feed_id
-JOIN feeds ON posts.feed_id = feeds.id
-WHERE feed_follows.user_id = $1
-ORDER BY posts.published_at DESC
+const getPosts = `-- name: GetPosts :many
+SELECT p.id, p.created_at, p.updated_at, p.title, p.url, p.description, p.published_at, p.feed_id, p.is_read, p.is_bookmarked, p.thumbnail_url, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+ORDER BY p.published_at DESC NULLS LAST
+LIMIT $1 OFFSET $2
+`
+
+type GetPostsParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+type GetPostsRow struct {
+	ID           uuid.UUID  `json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Title        string     `json:"title"`
+	Url          string     `json:"url"`
+	Description  *string    `json:"description"`
+	PublishedAt  *time.Time `json:"published_at"`
+	FeedID       uuid.UUID  `json:"feed_id"`
+	IsRead       bool       `json:"is_read"`
+	IsBookmarked bool       `json:"is_bookmarked"`
+	ThumbnailUrl *string    `json:"thumbnail_url"`
+	FeedName     string     `json:"feed_name"`
+}
+
+func (q *Queries) GetPosts(ctx context.Context, arg GetPostsParams) ([]GetPostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPosts, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsRow
+	for rows.Next() {
+		var i GetPostsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Title,
+			&i.Url,
+			&i.Description,
+			&i.PublishedAt,
+			&i.FeedID,
+			&i.IsRead,
+			&i.IsBookmarked,
+			&i.ThumbnailUrl,
+			&i.FeedName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPostsByFeed = `-- name: GetPostsByFeed :many
+SELECT p.id, p.created_at, p.updated_at, p.title, p.url, p.description, p.published_at, p.feed_id, p.is_read, p.is_bookmarked, p.thumbnail_url, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+WHERE p.feed_id = $1
+ORDER BY p.published_at DESC NULLS LAST
 LIMIT $2 OFFSET $3
 `
 
-type GetPostsForUserWithOffsetParams struct {
-	UserID uuid.UUID
-	Limit  int32
-	Offset int32
+type GetPostsByFeedParams struct {
+	FeedID uuid.UUID `json:"feed_id"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
 }
 
-type GetPostsForUserWithOffsetRow struct {
-	ID          uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Title       string
-	Url         string
-	Description sql.NullString
-	PublishedAt sql.NullTime
-	FeedID      uuid.UUID
-	FeedName    string
+type GetPostsByFeedRow struct {
+	ID           uuid.UUID  `json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Title        string     `json:"title"`
+	Url          string     `json:"url"`
+	Description  *string    `json:"description"`
+	PublishedAt  *time.Time `json:"published_at"`
+	FeedID       uuid.UUID  `json:"feed_id"`
+	IsRead       bool       `json:"is_read"`
+	IsBookmarked bool       `json:"is_bookmarked"`
+	ThumbnailUrl *string    `json:"thumbnail_url"`
+	FeedName     string     `json:"feed_name"`
 }
 
-func (q *Queries) GetPostsForUserWithOffset(ctx context.Context, arg GetPostsForUserWithOffsetParams) ([]GetPostsForUserWithOffsetRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUserWithOffset, arg.UserID, arg.Limit, arg.Offset)
+func (q *Queries) GetPostsByFeed(ctx context.Context, arg GetPostsByFeedParams) ([]GetPostsByFeedRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsByFeed, arg.FeedID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPostsForUserWithOffsetRow
+	var items []GetPostsByFeedRow
 	for rows.Next() {
-		var i GetPostsForUserWithOffsetRow
+		var i GetPostsByFeedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.CreatedAt,
@@ -168,6 +239,9 @@ func (q *Queries) GetPostsForUserWithOffset(ctx context.Context, arg GetPostsFor
 			&i.Description,
 			&i.PublishedAt,
 			&i.FeedID,
+			&i.IsRead,
+			&i.IsBookmarked,
+			&i.ThumbnailUrl,
 			&i.FeedName,
 		); err != nil {
 			return nil, err
@@ -181,4 +255,171 @@ func (q *Queries) GetPostsForUserWithOffset(ctx context.Context, arg GetPostsFor
 		return nil, err
 	}
 	return items, nil
+}
+
+const getPostsByGroup = `-- name: GetPostsByGroup :many
+SELECT p.id, p.created_at, p.updated_at, p.title, p.url, p.description, p.published_at, p.feed_id, p.is_read, p.is_bookmarked, p.thumbnail_url, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+JOIN feed_groups fg ON f.id = fg.feed_id
+WHERE fg.group_id = $1
+ORDER BY p.published_at DESC NULLS LAST
+LIMIT $2 OFFSET $3
+`
+
+type GetPostsByGroupParams struct {
+	GroupID uuid.UUID `json:"group_id"`
+	Limit   int32     `json:"limit"`
+	Offset  int32     `json:"offset"`
+}
+
+type GetPostsByGroupRow struct {
+	ID           uuid.UUID  `json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Title        string     `json:"title"`
+	Url          string     `json:"url"`
+	Description  *string    `json:"description"`
+	PublishedAt  *time.Time `json:"published_at"`
+	FeedID       uuid.UUID  `json:"feed_id"`
+	IsRead       bool       `json:"is_read"`
+	IsBookmarked bool       `json:"is_bookmarked"`
+	ThumbnailUrl *string    `json:"thumbnail_url"`
+	FeedName     string     `json:"feed_name"`
+}
+
+func (q *Queries) GetPostsByGroup(ctx context.Context, arg GetPostsByGroupParams) ([]GetPostsByGroupRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsByGroup, arg.GroupID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsByGroupRow
+	for rows.Next() {
+		var i GetPostsByGroupRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Title,
+			&i.Url,
+			&i.Description,
+			&i.PublishedAt,
+			&i.FeedID,
+			&i.IsRead,
+			&i.IsBookmarked,
+			&i.ThumbnailUrl,
+			&i.FeedName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getStats = `-- name: GetStats :one
+SELECT
+    COUNT(*) AS total_posts,
+    COUNT(*) FILTER (WHERE NOT is_read) AS unread_count,
+    COUNT(*) FILTER (WHERE is_bookmarked) AS bookmarked_count,
+    COUNT(*) FILTER (WHERE published_at >= NOW() - INTERVAL '24 hours') AS new_today
+FROM posts
+`
+
+type GetStatsRow struct {
+	TotalPosts      int64 `json:"total_posts"`
+	UnreadCount     int64 `json:"unread_count"`
+	BookmarkedCount int64 `json:"bookmarked_count"`
+	NewToday        int64 `json:"new_today"`
+}
+
+func (q *Queries) GetStats(ctx context.Context) (GetStatsRow, error) {
+	row := q.db.QueryRowContext(ctx, getStats)
+	var i GetStatsRow
+	err := row.Scan(
+		&i.TotalPosts,
+		&i.UnreadCount,
+		&i.BookmarkedCount,
+		&i.NewToday,
+	)
+	return i, err
+}
+
+const getStatsByGroup = `-- name: GetStatsByGroup :one
+SELECT
+    COUNT(*) AS total_posts,
+    COUNT(*) FILTER (WHERE NOT p.is_read) AS unread_count,
+    COUNT(*) FILTER (WHERE p.is_bookmarked) AS bookmarked_count,
+    COUNT(*) FILTER (WHERE p.published_at >= NOW() - INTERVAL '24 hours') AS new_today
+FROM posts p
+JOIN feed_groups fg ON p.feed_id = fg.feed_id
+WHERE fg.group_id = $1
+`
+
+type GetStatsByGroupRow struct {
+	TotalPosts      int64 `json:"total_posts"`
+	UnreadCount     int64 `json:"unread_count"`
+	BookmarkedCount int64 `json:"bookmarked_count"`
+	NewToday        int64 `json:"new_today"`
+}
+
+func (q *Queries) GetStatsByGroup(ctx context.Context, groupID uuid.UUID) (GetStatsByGroupRow, error) {
+	row := q.db.QueryRowContext(ctx, getStatsByGroup, groupID)
+	var i GetStatsByGroupRow
+	err := row.Scan(
+		&i.TotalPosts,
+		&i.UnreadCount,
+		&i.BookmarkedCount,
+		&i.NewToday,
+	)
+	return i, err
+}
+
+const markPostRead = `-- name: MarkPostRead :exec
+UPDATE posts SET is_read = TRUE, updated_at = NOW() WHERE id = $1
+`
+
+func (q *Queries) MarkPostRead(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, markPostRead, id)
+	return err
+}
+
+const markPostUnread = `-- name: MarkPostUnread :exec
+UPDATE posts SET is_read = FALSE, updated_at = NOW() WHERE id = $1
+`
+
+func (q *Queries) MarkPostUnread(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, markPostUnread, id)
+	return err
+}
+
+const toggleBookmark = `-- name: ToggleBookmark :one
+UPDATE posts SET is_bookmarked = NOT is_bookmarked, updated_at = NOW()
+WHERE id = $1 RETURNING id, created_at, updated_at, title, url, description, published_at, feed_id, is_read, is_bookmarked, thumbnail_url
+`
+
+func (q *Queries) ToggleBookmark(ctx context.Context, id uuid.UUID) (Post, error) {
+	row := q.db.QueryRowContext(ctx, toggleBookmark, id)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Title,
+		&i.Url,
+		&i.Description,
+		&i.PublishedAt,
+		&i.FeedID,
+		&i.IsRead,
+		&i.IsBookmarked,
+		&i.ThumbnailUrl,
+	)
+	return i, err
 }

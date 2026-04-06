@@ -3,19 +3,19 @@ package api
 import (
 	"compress/gzip"
 	"context"
-	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/LFroesch/Gator/internal/database"
+	"github.com/LFroesch/Sift/internal/database"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -24,218 +24,113 @@ import (
 )
 
 type Server struct {
-	db *database.Queries
+	db            *database.Queries
+	fetchInterval string
 }
 
-func NewServer(db *database.Queries) *Server {
-	return &Server{db: db}
+func NewServer(db *database.Queries, fetchInterval string) *Server {
+	return &Server{db: db, fetchInterval: fetchInterval}
 }
 
 func (s *Server) Start(port string) error {
 	r := gin.Default()
 
-	// CORS middleware
+	corsOrigin := os.Getenv("CORS_ORIGIN")
+	if corsOrigin == "" {
+		corsOrigin = "*"
+	}
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5004"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowOrigins:     []string{corsOrigin},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
+		AllowCredentials: corsOrigin != "*",
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// API routes
 	api := r.Group("/api")
 	{
-		// User routes
-		api.POST("/users", s.createUser)
-		api.GET("/users", s.getUsers)
-		api.GET("/users/:name", s.getUser)
-		api.PUT("/users/:userId", s.updateUser)
-		api.DELETE("/users/:userId", s.deleteUser)
-
-		// Feed routes
+		api.GET("/feeds", s.getFeeds)
 		api.POST("/feeds", s.createFeed)
-		api.GET("/feeds", s.getAllFeeds)
-		api.PUT("/feeds/:feedId", s.updateFeed)
-		api.DELETE("/feeds/:feedId", s.deleteFeed)
+		api.PUT("/feeds/:id", s.updateFeed)
+		api.DELETE("/feeds/:id", s.deleteFeed)
 
-		// Feed follow routes
-		api.POST("/follows", s.followFeed)
-		api.GET("/follows/:userId", s.getUserFollows)
-		api.DELETE("/follows/:userId", s.unfollowFeed)
+		api.GET("/posts", s.getPosts)
+		api.GET("/bookmarks", s.getBookmarks)
+		api.PATCH("/posts/:id/bookmark", s.toggleBookmark)
+		api.PATCH("/posts/:id/read", s.markRead)
+		api.PATCH("/posts/:id/unread", s.markUnread)
 
-		// Post routes
-		api.GET("/posts/:userId", s.getUserPosts)
+		api.GET("/stats", s.getStats)
 
-		// Bookmark routes
-		api.POST("/bookmarks", s.createBookmark)
-		api.DELETE("/bookmarks/:userId/:postId", s.deleteBookmark)
-		api.GET("/bookmarks/:userId", s.getUserBookmarks)
+		api.GET("/groups", s.getGroups)
+		api.POST("/groups", s.createGroup)
+		api.PUT("/groups/:id", s.updateGroup)
+		api.DELETE("/groups/:id", s.deleteGroup)
+		api.POST("/groups/:id/feeds/:feedId", s.addFeedToGroup)
+		api.DELETE("/groups/:id/feeds/:feedId", s.removeFeedFromGroup)
+		api.GET("/groups/:id/feeds", s.getFeedsByGroup)
 
-		// Read status routes
-		api.POST("/reads", s.markPostRead)
-		api.DELETE("/reads/:userId/:postId", s.markPostUnread)
-
-		// Feed fetch route
-		api.POST("/feeds/fetch/:userId", s.fetchUserFeeds)
-
-		// Admin routes
-		api.DELETE("/admin/posts", s.deleteAllPosts)
+		api.POST("/fetch", s.fetchAllFeeds)
+		api.DELETE("/posts", s.deleteAllPosts)
 	}
+
+	s.startFetcher()
 
 	return r.Run(":" + port)
 }
 
-// User handlers
-func (s *Server) createUser(c *gin.Context) {
-	var req struct {
-		Name string `json:"name" binding:"required"`
-	}
+// --- Feed handlers ---
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	user, err := s.db.CreateUser(context.Background(), database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Name:      req.Name,
-	})
-
+func (s *Server) getFeeds(c *gin.Context) {
+	feeds, err := s.db.GetAllFeeds(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusCreated, user)
+	// Attach groups to each feed
+	type feedWithGroups struct {
+		database.Feed
+		Groups []database.Group `json:"groups"`
+	}
+	result := make([]feedWithGroups, len(feeds))
+	for i, f := range feeds {
+		groups, err := s.db.GetGroupsByFeed(c.Request.Context(), f.ID)
+		if err != nil {
+			groups = []database.Group{}
+		}
+		if groups == nil {
+			groups = []database.Group{}
+		}
+		result[i] = feedWithGroups{Feed: f, Groups: groups}
+	}
+	c.JSON(http.StatusOK, result)
 }
 
-func (s *Server) getUsers(c *gin.Context) {
-	users, err := s.db.GetUsers(context.Background())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, users)
-}
-
-func (s *Server) getUser(c *gin.Context) {
-	name := c.Param("name")
-	user, err := s.db.GetUser(context.Background(), name)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, user)
-}
-
-// User update handler
-func (s *Server) updateUser(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	var req struct {
-		Name string `json:"name" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	user, err := s.db.UpdateUser(context.Background(), database.UpdateUserParams{
-		ID:        userID,
-		Name:      req.Name,
-		UpdatedAt: time.Now(),
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, user)
-}
-
-// User delete handler
-func (s *Server) deleteUser(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	err = s.db.DeleteUser(context.Background(), userID)
-	if err != nil {
-		fmt.Printf("Error deleting user: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	fmt.Printf("Successfully deleted user: %s\n", userID)
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
-}
-
-// Feed handlers
 func (s *Server) createFeed(c *gin.Context) {
 	var req struct {
-		Name   string `json:"name" binding:"required"`
-		URL    string `json:"url" binding:"required"`
-		UserID string `json:"user_id" binding:"required"`
+		Name string `json:"name" binding:"required"`
+		URL  string `json:"url" binding:"required"`
 	}
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	userID, err := uuid.Parse(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Name:      req.Name,
-		Url:       req.URL,
-		UserID:    userID,
+	feed, err := s.db.CreateFeed(c.Request.Context(), database.CreateFeedParams{
+		Name: req.Name,
+		Url:  req.URL,
 	})
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusCreated, feed)
 }
 
-func (s *Server) getAllFeeds(c *gin.Context) {
-	feeds, err := s.db.GetAllFeeds(context.Background())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, feeds)
-}
-
-// Feed update handler
 func (s *Server) updateFeed(c *gin.Context) {
-	feedIDStr := c.Param("feedId")
-	feedID, err := uuid.Parse(feedIDStr)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
 		return
@@ -245,491 +140,430 @@ func (s *Server) updateFeed(c *gin.Context) {
 		Name string `json:"name" binding:"required"`
 		URL  string `json:"url" binding:"required"`
 	}
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	feed, err := s.db.UpdateFeed(context.Background(), database.UpdateFeedParams{
-		ID:        feedID,
-		Name:      req.Name,
-		Url:       req.URL,
-		UpdatedAt: time.Now(),
+	feed, err := s.db.UpdateFeed(c.Request.Context(), database.UpdateFeedParams{
+		ID:   id,
+		Name: req.Name,
+		Url:  req.URL,
 	})
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, feed)
 }
 
-// Feed delete handler
 func (s *Server) deleteFeed(c *gin.Context) {
-	feedIDStr := c.Param("feedId")
-	feedID, err := uuid.Parse(feedIDStr)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
 		return
 	}
 
-	err = s.db.DeleteFeed(context.Background(), feedID)
-	if err != nil {
-		fmt.Printf("Error deleting feed: %v\n", err)
+	if err := s.db.DeleteFeed(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	fmt.Printf("Successfully deleted feed: %s\n", feedID)
-	c.JSON(http.StatusOK, gin.H{"message": "Feed deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Feed deleted"})
 }
 
-// Feed follow handlers
-func (s *Server) followFeed(c *gin.Context) {
-	var req struct {
-		UserID  string `json:"user_id" binding:"required"`
-		FeedURL string `json:"feed_url" binding:"required"`
-	}
+// --- Post handlers ---
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	fmt.Printf("Follow request: UserID=%s, FeedURL=%s\n", req.UserID, req.FeedURL)
-
-	userID, err := uuid.Parse(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	// Get feed by URL first
-	feed, err := s.db.GetFeedByURL(context.Background(), req.FeedURL)
-	if err != nil {
-		fmt.Printf("Feed not found for URL: %s, error: %v\n", req.FeedURL, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Feed not found"})
-		return
-	}
-
-	fmt.Printf("Found feed: ID=%s, Name=%s\n", feed.ID, feed.Name)
-
-	follow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		UserID:    userID,
-		FeedID:    feed.ID,
-	})
-
-	if err != nil {
-		fmt.Printf("Error creating follow: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	fmt.Printf("Follow created successfully\n")
-	c.JSON(http.StatusCreated, follow)
-}
-
-func (s *Server) getUserFollows(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	fmt.Printf("Getting follows for user ID: %s\n", userID)
-
-	follows, err := s.db.GetFeedFollowsByUser(context.Background(), userID)
-	if err != nil {
-		fmt.Printf("Error getting follows: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	fmt.Printf("Found %d follows\n", len(follows))
-	c.JSON(http.StatusOK, follows)
-}
-
-func (s *Server) unfollowFeed(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	feedURL := c.Query("feedUrl")
-
-	fmt.Printf("Unfollow request: UserID=%s, FeedURL=%s\n", userIDStr, feedURL)
-
-	if feedURL == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "feedUrl query parameter is required"})
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	feed, err := s.db.GetFeedByURL(context.Background(), feedURL)
-	if err != nil {
-		fmt.Printf("Feed not found for URL: %s, error: %v\n", feedURL, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Feed not found"})
-		return
-	}
-
-	err = s.db.DeleteFeedFollowByUserAndFeed(context.Background(), database.DeleteFeedFollowByUserAndFeedParams{
-		UserID: userID,
-		FeedID: feed.ID,
-	})
-
-	if err != nil {
-		fmt.Printf("Error deleting feed follow: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	fmt.Printf("Successfully unfollowed feed: %s\n", feed.Name)
-	c.JSON(http.StatusOK, gin.H{"message": "Unfollowed successfully"})
-}
-
-// Post handlers
-func (s *Server) getUserPosts(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	limitStr := c.DefaultQuery("limit", "10")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit"})
-		return
-	}
-
-	offsetStr := c.DefaultQuery("offset", "0")
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset"})
-		return
-	}
-
-	// Check for feed_id filter
+func (s *Server) getPosts(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	feedIDStr := c.Query("feed_id")
-	var feedID *uuid.UUID
+	groupIDStr := c.Query("group_id")
+
+	if groupIDStr != "" {
+		groupID, err := uuid.Parse(groupIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+			return
+		}
+		posts, err := s.db.GetPostsByGroup(c.Request.Context(), database.GetPostsByGroupParams{
+			GroupID: groupID,
+			Limit:   int32(limit),
+			Offset:  int32(offset),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"posts": posts, "hasMore": len(posts) == limit})
+		return
+	}
+
 	if feedIDStr != "" {
-		parsedFeedID, err := uuid.Parse(feedIDStr)
+		feedID, err := uuid.Parse(feedIDStr)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
 			return
 		}
-		feedID = &parsedFeedID
-	}
-
-	var posts []database.GetPostsForUserWithOffsetRow
-
-	if feedID != nil {
-		// Filter by specific feed - we'll need to create a new query for this
-		// For now, get all posts and filter them (not ideal but works)
-		allPosts, err := s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
-			UserID: userID,
-			Limit:  int32(limit * 10), // Get more to filter
+		posts, err := s.db.GetPostsByFeed(c.Request.Context(), database.GetPostsByFeedParams{
+			FeedID: feedID,
+			Limit:  int32(limit),
 			Offset: int32(offset),
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
-		// Filter posts by feed ID
-		filteredPosts := make([]database.GetPostsForUserWithOffsetRow, 0)
-		for _, post := range allPosts {
-			if post.FeedID == *feedID {
-				filteredPosts = append(filteredPosts, post)
-				if len(filteredPosts) >= limit {
-					break
-				}
-			}
-		}
-		posts = filteredPosts
-	} else {
-		// Use offset-based pagination if offset is provided
-		if offset > 0 {
-			posts, err = s.db.GetPostsForUserWithOffset(context.Background(), database.GetPostsForUserWithOffsetParams{
-				UserID: userID,
-				Limit:  int32(limit),
-				Offset: int32(offset),
-			})
-		} else {
-			// Use the original query for backward compatibility
-			postsOrig, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
-				UserID: userID,
-				Limit:  int32(limit),
-			})
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			// Convert to the offset version structure for consistency
-			posts = make([]database.GetPostsForUserWithOffsetRow, len(postsOrig))
-			for i, post := range postsOrig {
-				posts[i] = database.GetPostsForUserWithOffsetRow{
-					ID:          post.ID,
-					CreatedAt:   post.CreatedAt,
-					UpdatedAt:   post.UpdatedAt,
-					Title:       post.Title,
-					Url:         post.Url,
-					Description: post.Description,
-					PublishedAt: post.PublishedAt,
-					FeedName:    post.FeedName,
-				}
-			}
-		}
+		c.JSON(http.StatusOK, gin.H{"posts": posts, "hasMore": len(posts) == limit})
+		return
 	}
 
+	posts, err := s.db.GetPosts(c.Request.Context(), database.GetPostsParams{
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Enhance posts with bookmark and read status
-	type EnhancedPost struct {
-		database.GetPostsForUserWithOffsetRow
-		IsBookmarked bool `json:"is_bookmarked"`
-		IsRead       bool `json:"is_read"`
-	}
-
-	enhancedPosts := make([]EnhancedPost, len(posts))
-	for i, post := range posts {
-		// Check if bookmarked
-		isBookmarked, err := s.db.IsPostBookmarked(context.Background(), database.IsPostBookmarkedParams{
-			UserID: userID,
-			PostID: post.ID,
-		})
-		if err != nil {
-			isBookmarked = false // Default to false on error
-		}
-
-		// Check if read
-		isRead, err := s.db.IsPostRead(context.Background(), database.IsPostReadParams{
-			UserID: userID,
-			PostID: post.ID,
-		})
-		if err != nil {
-			isRead = false // Default to false on error
-		}
-
-		enhancedPosts[i] = EnhancedPost{
-			GetPostsForUserWithOffsetRow: post,
-			IsBookmarked:                 isBookmarked,
-			IsRead:                       isRead,
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"posts":   enhancedPosts,
-		"limit":   limit,
-		"offset":  offset,
-		"hasMore": len(posts) == limit,
-	})
+	c.JSON(http.StatusOK, gin.H{"posts": posts, "hasMore": len(posts) == limit})
 }
 
-// Bookmark handlers
-func (s *Server) createBookmark(c *gin.Context) {
-	var req struct {
-		UserID string `json:"user_id" binding:"required"`
-		PostID string `json:"post_id" binding:"required"`
-	}
+func (s *Server) getBookmarks(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	userID, err := uuid.Parse(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	postID, err := uuid.Parse(req.PostID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
-		return
-	}
-
-	now := time.Now()
-	bookmark, err := s.db.CreateBookmark(c.Request.Context(), database.CreateBookmarkParams{
-		ID:        uuid.New(),
-		CreatedAt: now,
-		UpdatedAt: now,
-		UserID:    userID,
-		PostID:    postID,
-	})
-
-	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key") {
-			c.JSON(http.StatusConflict, gin.H{"error": "Post already bookmarked"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create bookmark"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, bookmark)
-}
-
-func (s *Server) deleteBookmark(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	postIDStr := c.Param("postId")
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	postID, err := uuid.Parse(postIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
-		return
-	}
-
-	err = s.db.DeleteBookmark(c.Request.Context(), database.DeleteBookmarkParams{
-		UserID: userID,
-		PostID: postID,
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete bookmark"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Bookmark deleted successfully"})
-}
-
-func (s *Server) getUserBookmarks(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	limitStr := c.DefaultQuery("limit", "10")
-	offsetStr := c.DefaultQuery("offset", "0")
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 10
-	}
-
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		offset = 0
-	}
-
-	bookmarks, err := s.db.GetUserBookmarks(c.Request.Context(), database.GetUserBookmarksParams{
-		UserID: userID,
+	posts, err := s.db.GetBookmarkedPosts(c.Request.Context(), database.GetBookmarkedPostsParams{
 		Limit:  int32(limit),
 		Offset: int32(offset),
 	})
-
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bookmarks"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"posts": posts, "hasMore": len(posts) == limit})
+}
+
+func (s *Server) toggleBookmark(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
 
-	if bookmarks == nil {
-		bookmarks = []database.GetUserBookmarksRow{}
+	post, err := s.db.ToggleBookmark(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"bookmarks": bookmarks,
-		"hasMore":   len(bookmarks) == limit,
-	})
+	c.JSON(http.StatusOK, post)
 }
 
-// Read status handlers
-func (s *Server) markPostRead(c *gin.Context) {
-	var req struct {
-		UserID string `json:"user_id" binding:"required"`
-		PostID string `json:"post_id" binding:"required"`
+func (s *Server) markRead(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+	if err := s.db.MarkPostRead(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Marked read"})
+}
+
+func (s *Server) markUnread(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+	if err := s.db.MarkPostUnread(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Marked unread"})
+}
+
+func (s *Server) deleteAllPosts(c *gin.Context) {
+	if err := s.db.DeleteAllPosts(c.Request.Context()); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "All posts deleted"})
+}
+
+// --- Stats ---
+
+func (s *Server) getStats(c *gin.Context) {
+	groupIDStr := c.Query("group_id")
+
+	if groupIDStr != "" {
+		groupID, err := uuid.Parse(groupIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+			return
+		}
+		stats, err := s.db.GetStatsByGroup(c.Request.Context(), groupID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, stats)
+		return
 	}
 
+	stats, err := s.db.GetStats(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, stats)
+}
+
+// --- Group handlers ---
+
+func (s *Server) getGroups(c *gin.Context) {
+	groups, err := s.db.GetAllGroups(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if groups == nil {
+		groups = []database.Group{}
+	}
+	c.JSON(http.StatusOK, groups)
+}
+
+func (s *Server) createGroup(c *gin.Context) {
+	var req struct {
+		Name string `json:"name" binding:"required"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	userID, err := uuid.Parse(req.UserID)
+	group, err := s.db.CreateGroup(c.Request.Context(), req.Name)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	c.JSON(http.StatusCreated, group)
+}
 
-	postID, err := uuid.Parse(req.PostID)
+func (s *Server) updateGroup(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
 		return
 	}
-
-	now := time.Now()
-	postRead, err := s.db.CreatePostRead(c.Request.Context(), database.CreatePostReadParams{
-		ID:        uuid.New(),
-		CreatedAt: now,
-		UpdatedAt: now,
-		UserID:    userID,
-		PostID:    postID,
-		ReadAt:    now,
+	var req struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	group, err := s.db.UpdateGroup(c.Request.Context(), database.UpdateGroupParams{
+		ID:   id,
+		Name: req.Name,
 	})
-
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key") {
-			c.JSON(http.StatusConflict, gin.H{"error": "Post already marked as read"})
-			return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, group)
+}
+
+func (s *Server) deleteGroup(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	if err := s.db.DeleteGroup(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Group deleted"})
+}
+
+func (s *Server) addFeedToGroup(c *gin.Context) {
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	feedID, err := uuid.Parse(c.Param("feedId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
+		return
+	}
+	if err := s.db.AddFeedToGroup(c.Request.Context(), database.AddFeedToGroupParams{
+		FeedID:  feedID,
+		GroupID: groupID,
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Feed added to group"})
+}
+
+func (s *Server) removeFeedFromGroup(c *gin.Context) {
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	feedID, err := uuid.Parse(c.Param("feedId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed ID"})
+		return
+	}
+	if err := s.db.RemoveFeedFromGroup(c.Request.Context(), database.RemoveFeedFromGroupParams{
+		FeedID:  feedID,
+		GroupID: groupID,
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Feed removed from group"})
+}
+
+func (s *Server) getFeedsByGroup(c *gin.Context) {
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	feeds, err := s.db.GetFeedsByGroup(c.Request.Context(), groupID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if feeds == nil {
+		feeds = []database.Feed{}
+	}
+	c.JSON(http.StatusOK, feeds)
+}
+
+// --- Fetch logic ---
+
+func (s *Server) fetchAllFeeds(c *gin.Context) {
+	newPosts, fetchedFeeds, totalFeeds, err := s.fetchFeeds()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"newPosts":     newPosts,
+		"feedsFetched": fetchedFeeds,
+		"totalFeeds":   totalFeeds,
+	})
+}
+
+func (s *Server) startFetcher() {
+	interval, err := time.ParseDuration(s.fetchInterval)
+	if err != nil {
+		log.Printf("Invalid FETCH_INTERVAL %q, defaulting to 30m", s.fetchInterval)
+		interval = 30 * time.Minute
+	}
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		newPosts, fetched, total, err := s.fetchFeeds()
+		if err != nil {
+			log.Printf("Initial fetch error: %v", err)
+		} else {
+			log.Printf("Initial fetch: %d new posts from %d/%d feeds", newPosts, fetched, total)
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark post as read"})
-		return
-	}
 
-	c.JSON(http.StatusCreated, postRead)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for range ticker.C {
+			newPosts, fetched, total, err := s.fetchFeeds()
+			if err != nil {
+				log.Printf("Fetch error: %v", err)
+			} else if newPosts > 0 {
+				log.Printf("Fetched %d new posts from %d/%d feeds", newPosts, fetched, total)
+			}
+		}
+	}()
 }
 
-func (s *Server) markPostUnread(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	postIDStr := c.Param("postId")
-
-	userID, err := uuid.Parse(userIDStr)
+func (s *Server) fetchFeeds() (int, int, int, error) {
+	feeds, err := s.db.GetAllFeeds(context.Background())
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
+		return 0, 0, 0, err
 	}
 
-	postID, err := uuid.Parse(postIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
-		return
+	totalNew := 0
+	fetched := 0
+
+	for _, feed := range feeds {
+		n, err := s.scrapeFeed(feed)
+		if err != nil {
+			log.Printf("Error scraping %s: %v", feed.Name, err)
+			continue
+		}
+		totalNew += n
+		fetched++
+		s.db.MarkFeedFetched(context.Background(), feed.ID)
 	}
 
-	err = s.db.DeletePostRead(c.Request.Context(), database.DeletePostReadParams{
-		UserID: userID,
-		PostID: postID,
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark post as unread"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Post marked as unread successfully"})
+	return totalNew, fetched, len(feeds), nil
 }
 
-// RSS Feed structures for parsing
+func (s *Server) scrapeFeed(feed database.Feed) (int, error) {
+	feedData, err := s.fetchRSSFeed(context.Background(), feed.Url)
+	if err != nil {
+		return 0, fmt.Errorf("fetch %s: %w", feed.Name, err)
+	}
+
+	newPosts := 0
+	for _, item := range feedData.Channel.Item {
+		var publishedAt *time.Time
+		if item.PubDate != "" {
+			for _, format := range []string{time.RFC1123Z, time.RFC1123, time.RFC3339, "2006-01-02T15:04:05Z"} {
+				if t, err := time.Parse(format, item.PubDate); err == nil {
+					publishedAt = &t
+					break
+				}
+			}
+		}
+
+		var desc *string
+		if item.Description != "" {
+			desc = &item.Description
+		}
+
+		var thumb *string
+		if item.Thumbnail != "" {
+			thumb = &item.Thumbnail
+		}
+
+		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
+			Title:        item.Title,
+			Url:          item.Link,
+			Description:  desc,
+			PublishedAt:  publishedAt,
+			FeedID:       feed.ID,
+			ThumbnailUrl: thumb,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key") {
+				continue
+			}
+			log.Printf("Error creating post: %v", err)
+			continue
+		}
+		newPosts++
+	}
+
+	return newPosts, nil
+}
+
+// --- RSS parsing ---
+
 type RSSFeed struct {
 	Channel struct {
 		Title       string    `xml:"title"`
@@ -744,14 +578,31 @@ type RSSItem struct {
 	Link        string `xml:"link"`
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
+	Thumbnail   string // extracted after parse
 }
 
-// AtomFeed represents an Atom feed structure (used by Reddit, YouTube, etc.)
+type MediaContent struct {
+	URL    string `xml:"url,attr"`
+	Medium string `xml:"medium,attr"`
+}
+
+type MediaThumbnail struct {
+	URL string `xml:"url,attr"`
+}
+
 type AtomFeed struct {
-	Title       string      `xml:"title"`
-	Link        []AtomLink  `xml:"link"`
-	Description string      `xml:"subtitle"`
-	Entry       []AtomEntry `xml:"entry"`
+	Title string      `xml:"title"`
+	Entry []AtomEntry `xml:"entry"`
+}
+
+type AtomEntry struct {
+	Title     string     `xml:"title"`
+	Link      []AtomLink `xml:"link"`
+	Content   string     `xml:"content"`
+	Summary   string     `xml:"summary"`
+	Published string     `xml:"published"`
+	Updated   string     `xml:"updated"`
+	MediaDesc string     `xml:"http://search.yahoo.com/mrss/ description"`
 }
 
 type AtomLink struct {
@@ -759,160 +610,142 @@ type AtomLink struct {
 	Rel  string `xml:"rel,attr"`
 }
 
-type AtomEntry struct {
-	Title            string     `xml:"title"`
-	Link             []AtomLink `xml:"link"`
-	Content          string     `xml:"content"`
-	Summary          string     `xml:"summary"`
-	Published        string     `xml:"published"`
-	Updated          string     `xml:"updated"`
-	MediaDescription string     `xml:"http://search.yahoo.com/mrss/ description"`
+// rawRSSItem captures all the media namespace variants for thumbnail extraction
+type rawRSSItem struct {
+	Title          string           `xml:"title"`
+	Link           string           `xml:"link"`
+	Description    string           `xml:"description"`
+	PubDate        string           `xml:"pubDate"`
+	MediaContent   []MediaContent   `xml:"http://search.yahoo.com/mrss/ content"`
+	MediaThumbnail []MediaThumbnail `xml:"http://search.yahoo.com/mrss/ thumbnail"`
+	Enclosure      struct {
+		URL  string `xml:"url,attr"`
+		Type string `xml:"type,attr"`
+	} `xml:"enclosure"`
 }
 
-// fetchUserFeeds - API endpoint to fetch new posts for a user's followed feeds
-func (s *Server) fetchUserFeeds(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	// Get user's followed feeds
-	follows, err := s.db.GetFeedFollowsByUser(context.Background(), userID)
-	if err != nil {
-		log.Printf("Error getting user follows: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user follows"})
-		return
-	}
-
-	if len(follows) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "No feeds to fetch",
-			"count":   0,
-		})
-		return
-	}
-
-	totalNewPosts := 0
-	fetchedFeeds := 0
-
-	// Fetch from each followed feed
-	for _, follow := range follows {
-		// Get the feed details
-		feed, err := s.db.GetFeedByID(context.Background(), follow.FeedID)
-		if err != nil {
-			log.Printf("Error getting feed %s: %v", follow.FeedID, err)
-			continue
-		}
-
-		// Fetch new posts from this feed
-		newPosts, err := s.scrapeFeedForAPI(feed)
-		if err != nil {
-			log.Printf("Error scraping feed %s: %v", feed.Name, err)
-			continue
-		}
-
-		totalNewPosts += newPosts
-		fetchedFeeds++
-
-		// Mark feed as fetched
-		s.db.MarkFeedFetched(context.Background(), feed.ID)
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":      "Feeds fetched successfully",
-		"feedsFetched": fetchedFeeds,
-		"totalFeeds":   len(follows),
-		"newPosts":     totalNewPosts,
-	})
+type rawRSSFeed struct {
+	Channel struct {
+		Title       string       `xml:"title"`
+		Link        string       `xml:"link"`
+		Description string       `xml:"description"`
+		Item        []rawRSSItem `xml:"item"`
+	} `xml:"channel"`
 }
 
-// scrapeFeedForAPI - Internal function to scrape a feed and return count of new posts
-func (s *Server) scrapeFeedForAPI(feed database.Feed) (int, error) {
-	feedData, err := s.fetchRSSFeed(context.Background(), feed.Url)
-	if err != nil {
-		return 0, fmt.Errorf("couldn't fetch feed %s: %w", feed.Name, err)
+// MediaGroup captures nested media:group > media:thumbnail (YouTube uses this)
+type MediaGroup struct {
+	Thumbnail []MediaThumbnail `xml:"http://search.yahoo.com/mrss/ thumbnail"`
+	Content   []MediaContent   `xml:"http://search.yahoo.com/mrss/ content"`
+}
+
+// rawAtomEntry with media support
+type rawAtomEntry struct {
+	Title          string           `xml:"title"`
+	Link           []AtomLink       `xml:"link"`
+	Content        string           `xml:"content"`
+	Summary        string           `xml:"summary"`
+	Published      string           `xml:"published"`
+	Updated        string           `xml:"updated"`
+	MediaDesc      string           `xml:"http://search.yahoo.com/mrss/ description"`
+	MediaContent   []MediaContent   `xml:"http://search.yahoo.com/mrss/ content"`
+	MediaThumbnail []MediaThumbnail `xml:"http://search.yahoo.com/mrss/ thumbnail"`
+	MediaGroup     *MediaGroup      `xml:"http://search.yahoo.com/mrss/ group"`
+}
+
+type rawAtomFeed struct {
+	Title string         `xml:"title"`
+	Entry []rawAtomEntry `xml:"entry"`
+}
+
+var imgTagRe = regexp.MustCompile(`<img[^>]+src=["']([^"']+)["']`)
+
+func extractThumbnail(item rawRSSItem) string {
+	// 1. media:content with medium="image"
+	for _, mc := range item.MediaContent {
+		if mc.URL != "" && (mc.Medium == "image" || mc.Medium == "") {
+			return mc.URL
+		}
 	}
+	// 2. media:thumbnail
+	for _, mt := range item.MediaThumbnail {
+		if mt.URL != "" {
+			return mt.URL
+		}
+	}
+	// 3. enclosure with image type
+	if item.Enclosure.URL != "" && strings.HasPrefix(item.Enclosure.Type, "image/") {
+		return item.Enclosure.URL
+	}
+	// 4. first <img> in description
+	if matches := imgTagRe.FindStringSubmatch(item.Description); len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
 
-	newPosts := 0
-	for _, item := range feedData.Channel.Item {
-		publishedAt := sql.NullTime{}
-
-		// Try parsing different date formats
-		if item.PubDate != "" {
-			// Try RFC1123Z first (RSS format)
-			if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
-				publishedAt = sql.NullTime{Time: t, Valid: true}
-			} else if t, err := time.Parse(time.RFC1123, item.PubDate); err == nil {
-				publishedAt = sql.NullTime{Time: t, Valid: true}
-			} else if t, err := time.Parse(time.RFC3339, item.PubDate); err == nil {
-				// Atom format (ISO 8601)
-				publishedAt = sql.NullTime{Time: t, Valid: true}
-			} else if t, err := time.Parse("2006-01-02T15:04:05Z", item.PubDate); err == nil {
-				// Alternative ISO format
-				publishedAt = sql.NullTime{Time: t, Valid: true}
+func extractAtomThumbnail(entry rawAtomEntry) string {
+	// 1. Direct media:content
+	for _, mc := range entry.MediaContent {
+		if mc.URL != "" && (mc.Medium == "image" || mc.Medium == "") {
+			return mc.URL
+		}
+	}
+	// 2. Direct media:thumbnail
+	for _, mt := range entry.MediaThumbnail {
+		if mt.URL != "" {
+			return mt.URL
+		}
+	}
+	// 3. Nested media:group > media:thumbnail (YouTube)
+	if entry.MediaGroup != nil {
+		for _, mt := range entry.MediaGroup.Thumbnail {
+			if mt.URL != "" {
+				return mt.URL
 			}
 		}
-
-		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
-			ID:        uuid.New(),
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
-			FeedID:    feed.ID,
-			Title:     item.Title,
-			Description: sql.NullString{
-				String: item.Description,
-				Valid:  true,
-			},
-			Url:         item.Link,
-			PublishedAt: publishedAt,
-		})
-		if err != nil {
-			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-				continue // Post already exists, skip
+		for _, mc := range entry.MediaGroup.Content {
+			if mc.URL != "" && mc.Medium == "image" {
+				return mc.URL
 			}
-			log.Printf("Couldn't create post: %v", err)
-			continue
 		}
-		newPosts++
 	}
-
-	log.Printf("Feed %s scraped, %d new posts added", feed.Name, newPosts)
-	return newPosts, nil
+	// 4. First <img> in content/summary
+	content := entry.Content
+	if content == "" {
+		content = entry.Summary
+	}
+	if matches := imgTagRe.FindStringSubmatch(content); len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }
 
-// fetchRSSFeed - Fetch and parse RSS feed
 func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
-	request, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set headers that make the request appear more legitimate to avoid being blocked
-	request.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Gator RSS Reader/1.0; +https://github.com/user/gator)")
-	request.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
-	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	request.Header.Set("Accept-Encoding", "gzip, deflate")
-	request.Header.Set("Cache-Control", "no-cache")
-	request.Header.Set("Connection", "keep-alive")
+	req.Header.Set("User-Agent", "Sift/1.0 RSS Reader")
+	req.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
+	req.Header.Set("Accept-Encoding", "gzip, deflate")
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	response, err := client.Do(request)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer resp.Body.Close()
 
-	// Handle gzipped responses
-	var reader io.Reader = response.Body
-	if response.Header.Get("Content-Encoding") == "gzip" {
-		gzipReader, err := gzip.NewReader(response.Body)
+	var reader io.Reader = resp.Body
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		gr, err := gzip.NewReader(resp.Body)
 		if err != nil {
 			return nil, err
 		}
-		defer gzipReader.Close()
-		reader = gzipReader
+		defer gr.Close()
+		reader = gr
 	}
 
 	body, err := io.ReadAll(reader)
@@ -920,237 +753,109 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 		return nil, err
 	}
 
-	// Handle different character encodings
+	// Handle ISO-8859-1 encoding
 	bodyStr := string(body)
 	if strings.Contains(bodyStr, `encoding="ISO-8859-1"`) {
-		decoder := charmap.ISO8859_1.NewDecoder()
-		utf8Body, err := io.ReadAll(transform.NewReader(strings.NewReader(bodyStr), decoder))
-		if err != nil {
-			log.Printf("Warning: Failed to convert from ISO-8859-1: %v", err)
-		} else {
-			// Fix the encoding declaration in the XML
-			bodyStr = string(utf8Body)
-			bodyStr = strings.Replace(bodyStr, `encoding="ISO-8859-1"`, `encoding="UTF-8"`, 1)
+		decoded, err := io.ReadAll(transform.NewReader(strings.NewReader(bodyStr), charmap.ISO8859_1.NewDecoder()))
+		if err == nil {
+			bodyStr = strings.Replace(string(decoded), `encoding="ISO-8859-1"`, `encoding="UTF-8"`, 1)
 			body = []byte(bodyStr)
 		}
 	}
 
-	// Clean up common XML issues before parsing
-	bodyStr = string(body)
-	bodyStr = s.cleanXML(bodyStr)
+	bodyStr = cleanXML(string(body))
 
-	// Parse the XML - try RSS first, then Atom
-	var feed RSSFeed
-	err = xml.Unmarshal([]byte(bodyStr), &feed)
-	if err != nil || feed.Channel.Title == "" {
-		// If RSS parsing failed or didn't find channel, try Atom format
-		var atomFeed AtomFeed
-		err = xml.Unmarshal([]byte(bodyStr), &atomFeed)
-		if err != nil {
-			return nil, fmt.Errorf("XML parsing error: %w", err)
+	// Try RSS first with raw structs to capture media namespaces
+	var rawFeed rawRSSFeed
+	if err := xml.Unmarshal([]byte(bodyStr), &rawFeed); err == nil && rawFeed.Channel.Title != "" {
+		feed := &RSSFeed{}
+		feed.Channel.Title = rawFeed.Channel.Title
+		feed.Channel.Link = rawFeed.Channel.Link
+		feed.Channel.Description = rawFeed.Channel.Description
+		feed.Channel.Item = make([]RSSItem, len(rawFeed.Channel.Item))
+		for i, raw := range rawFeed.Channel.Item {
+			feed.Channel.Item[i] = RSSItem{
+				Title:       raw.Title,
+				Link:        raw.Link,
+				Description: raw.Description,
+				PubDate:     raw.PubDate,
+				Thumbnail:   extractThumbnail(raw),
+			}
 		}
+		cleanFeedItems(feed)
+		return feed, nil
+	}
 
-		// Convert Atom to RSS format
-		feed.Channel.Title = atomFeed.Title
-		feed.Channel.Description = atomFeed.Description
+	// Try Atom
+	var rawAtom rawAtomFeed
+	if err := xml.Unmarshal([]byte(bodyStr), &rawAtom); err != nil {
+		return nil, fmt.Errorf("XML parse error: %w", err)
+	}
 
-		// Find the alternate link
-		for _, link := range atomFeed.Link {
+	feed := &RSSFeed{}
+	feed.Channel.Title = rawAtom.Title
+	feed.Channel.Item = make([]RSSItem, len(rawAtom.Entry))
+	for i, entry := range rawAtom.Entry {
+		item := &feed.Channel.Item[i]
+		item.Title = entry.Title
+		item.Thumbnail = extractAtomThumbnail(entry)
+
+		for _, link := range entry.Link {
 			if link.Rel == "alternate" || link.Rel == "" {
-				feed.Channel.Link = link.Href
+				item.Link = link.Href
 				break
 			}
 		}
 
-		// Convert entries to items
-		feed.Channel.Item = make([]RSSItem, len(atomFeed.Entry))
-		for i, entry := range atomFeed.Entry {
-			feed.Channel.Item[i].Title = entry.Title
+		switch {
+		case entry.Content != "":
+			item.Description = entry.Content
+		case entry.Summary != "":
+			item.Description = entry.Summary
+		case entry.MediaDesc != "":
+			item.Description = entry.MediaDesc
+		}
 
-			// Find the entry link
-			for _, link := range entry.Link {
-				if link.Rel == "alternate" || link.Rel == "" {
-					feed.Channel.Item[i].Link = link.Href
-					break
-				}
-			}
-
-			// Use content, summary, or media description for description
-			if entry.Content != "" {
-				feed.Channel.Item[i].Description = entry.Content
-			} else if entry.Summary != "" {
-				feed.Channel.Item[i].Description = entry.Summary
-			} else if entry.MediaDescription != "" {
-				feed.Channel.Item[i].Description = entry.MediaDescription
-			}
-
-			// Use published or updated for date
-			if entry.Published != "" {
-				feed.Channel.Item[i].PubDate = entry.Published
-			} else {
-				feed.Channel.Item[i].PubDate = entry.Updated
-			}
+		if entry.Published != "" {
+			item.PubDate = entry.Published
+		} else {
+			item.PubDate = entry.Updated
 		}
 	}
 
-	// Unescape HTML entities and clean up descriptions
+	cleanFeedItems(feed)
+	return feed, nil
+}
+
+func cleanFeedItems(feed *RSSFeed) {
 	feed.Channel.Title = html.UnescapeString(feed.Channel.Title)
-	feed.Channel.Description = html.UnescapeString(feed.Channel.Description)
 	for i := range feed.Channel.Item {
 		feed.Channel.Item[i].Title = html.UnescapeString(feed.Channel.Item[i].Title)
-		feed.Channel.Item[i].Description = s.cleanDescription(html.UnescapeString(feed.Channel.Item[i].Description))
+		feed.Channel.Item[i].Description = cleanDescription(html.UnescapeString(feed.Channel.Item[i].Description))
 	}
-
-	return &feed, nil
 }
 
-// cleanDescription removes HTML tags and cleans up RSS feed descriptions
-func (s *Server) cleanDescription(description string) string {
-	// Special handling for Hacker News style feeds
-	if strings.Contains(description, "Article URL:") && strings.Contains(description, "Comments URL:") {
-		return s.extractHackerNewsDescription(description)
-	}
+var hnJunkRe = regexp.MustCompile(`(?i)Article URL:.*?(Comments URL:.*?)?(Points:.*?)?(#\s*Comments:.*?)?$`)
 
-	// First, unescape HTML entities so we can properly match HTML tags
-	unescaped := html.UnescapeString(description)
-
-	// Remove HTML comments
-	commentRegex := regexp.MustCompile(`<!--[\s\S]*?-->`)
-	unescaped = commentRegex.ReplaceAllString(unescaped, "")
-
-	// Remove Reddit-specific markers
-	unescaped = strings.ReplaceAll(unescaped, "<!-- SC_OFF -->", "")
-	unescaped = strings.ReplaceAll(unescaped, "<!-- SC_ON -->", "")
-
-	// Remove HTML tags - more comprehensive regex
-	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
-	cleaned := htmlTagRegex.ReplaceAllString(unescaped, "")
-
-	// Decode common HTML entities that might remain
-	cleaned = strings.ReplaceAll(cleaned, "&amp;", "&")
-	cleaned = strings.ReplaceAll(cleaned, "&lt;", "<")
-	cleaned = strings.ReplaceAll(cleaned, "&gt;", ">")
-	cleaned = strings.ReplaceAll(cleaned, "&quot;", "\"")
-	cleaned = strings.ReplaceAll(cleaned, "&#39;", "'")
-	cleaned = strings.ReplaceAll(cleaned, "&nbsp;", " ")
-
-	// Remove extra whitespace and newlines
-	cleaned = strings.TrimSpace(cleaned)
-	cleaned = regexp.MustCompile(`\s+`).ReplaceAllString(cleaned, " ")
-
-	// Remove common RSS feed artifacts
-	cleaned = strings.ReplaceAll(cleaned, "\n", " ")
-	cleaned = strings.ReplaceAll(cleaned, "\r", " ")
-	cleaned = strings.ReplaceAll(cleaned, "\t", " ")
-
-	// Remove Reddit submission line (submitted by /u/username)
-	submittedRegex := regexp.MustCompile(`\s*submitted by\s+/u/\w+\s*`)
-	cleaned = submittedRegex.ReplaceAllString(cleaned, "")
-
-	// Remove [link] and [comments] markers at the end
-	linkCommentsRegex := regexp.MustCompile(`\s*\[link\]\s*\[comments\]\s*$`)
-	cleaned = linkCommentsRegex.ReplaceAllString(cleaned, "")
-
-	// Clean up any remaining extra spaces
-	cleaned = regexp.MustCompile(`\s+`).ReplaceAllString(cleaned, " ")
-	cleaned = strings.TrimSpace(cleaned)
-
-	return cleaned
+func cleanDescription(desc string) string {
+	desc = html.UnescapeString(desc)
+	desc = regexp.MustCompile(`<!--[\s\S]*?-->`).ReplaceAllString(desc, "")
+	desc = regexp.MustCompile(`<[^>]*>`).ReplaceAllString(desc, "")
+	desc = strings.NewReplacer("&amp;", "&", "&lt;", "<", "&gt;", ">", "&quot;", `"`, "&#39;", "'", "&nbsp;", " ").Replace(desc)
+	desc = regexp.MustCompile(`\s+`).ReplaceAllString(desc, " ")
+	desc = hnJunkRe.ReplaceAllString(desc, "")
+	return strings.TrimSpace(desc)
 }
 
-// cleanXML fixes common XML parsing issues in RSS feeds
-func (s *Server) cleanXML(xmlContent string) string {
-	// Fix unclosed hr tags and similar issues
-	xmlContent = regexp.MustCompile(`<hr[^>]*>`).ReplaceAllString(xmlContent, "<hr/>")
-	xmlContent = regexp.MustCompile(`<br[^>]*>`).ReplaceAllString(xmlContent, "<br/>")
-	xmlContent = regexp.MustCompile(`<img([^>]*)>`).ReplaceAllString(xmlContent, "<img$1/>")
-	xmlContent = regexp.MustCompile(`<input([^>]*)>`).ReplaceAllString(xmlContent, "<input$1/>")
-
-	// Remove or fix other common problematic elements
-	xmlContent = strings.ReplaceAll(xmlContent, "&", "&amp;")
-	xmlContent = strings.ReplaceAll(xmlContent, "&amp;amp;", "&amp;")
-	xmlContent = strings.ReplaceAll(xmlContent, "&amp;lt;", "&lt;")
-	xmlContent = strings.ReplaceAll(xmlContent, "&amp;gt;", "&gt;")
-	xmlContent = strings.ReplaceAll(xmlContent, "&amp;quot;", "&quot;")
-
-	return xmlContent
-}
-
-// extractHackerNewsDescription extracts meaningful content from Hacker News style descriptions
-func (s *Server) extractHackerNewsDescription(description string) string {
-	// For Hacker News style feeds, we'll create a more meaningful description
-	// Extract the title from the link if possible, or provide a summary
-
-	// Remove HTML tags first
-	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
-	plainText := htmlTagRegex.ReplaceAllString(description, "")
-
-	// Extract article URL
-	articleURLRegex := regexp.MustCompile(`Article URL:\s*([^\s]+)`)
-	matches := articleURLRegex.FindStringSubmatch(plainText)
-
-	var result string
-	if len(matches) > 1 {
-		articleURL := matches[1]
-		// Try to extract a meaningful description from the URL
-		if strings.Contains(articleURL, "github.com") {
-			result = "GitHub repository: " + s.extractGitHubRepoInfo(articleURL)
-		} else if strings.Contains(articleURL, "arxiv.org") {
-			result = "Research paper from arXiv"
-		} else if strings.Contains(articleURL, "youtube.com") || strings.Contains(articleURL, "youtu.be") {
-			result = "YouTube video"
-		} else {
-			// Extract domain for a generic description
-			domainRegex := regexp.MustCompile(`https?://([^/]+)`)
-			domainMatches := domainRegex.FindStringSubmatch(articleURL)
-			if len(domainMatches) > 1 {
-				domain := domainMatches[1]
-				result = fmt.Sprintf("Article from %s", domain)
-			} else {
-				result = "External article"
-			}
-		}
-	} else {
-		result = "Hacker News discussion"
-	}
-
-	// Add points and comments info if available
-	pointsRegex := regexp.MustCompile(`Points:\s*(\d+)`)
-	commentsRegex := regexp.MustCompile(`#\s*Comments:\s*(\d+)`)
-
-	pointsMatches := pointsRegex.FindStringSubmatch(plainText)
-	commentsMatches := commentsRegex.FindStringSubmatch(plainText)
-
-	if len(pointsMatches) > 1 && len(commentsMatches) > 1 {
-		result += fmt.Sprintf(" • %s points, %s comments", pointsMatches[1], commentsMatches[1])
-	}
-
-	return result
-}
-
-// extractGitHubRepoInfo extracts repository name from GitHub URL
-func (s *Server) extractGitHubRepoInfo(url string) string {
-	repoRegex := regexp.MustCompile(`github\.com/([^/]+)/([^/?]+)`)
-	matches := repoRegex.FindStringSubmatch(url)
-	if len(matches) > 2 {
-		return fmt.Sprintf("%s/%s", matches[1], matches[2])
-	}
-	return url
-}
-
-// Admin handlers
-func (s *Server) deleteAllPosts(c *gin.Context) {
-	// Delete all posts using the generated method
-	err := s.db.DeleteAllPosts(context.Background())
-	if err != nil {
-		log.Printf("Error deleting all posts: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete posts"})
-		return
-	}
-
-	log.Printf("Admin: All posts deleted from database")
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "All posts deleted successfully",
-	})
+func cleanXML(s string) string {
+	s = regexp.MustCompile(`<hr[^>]*>`).ReplaceAllString(s, "<hr/>")
+	s = regexp.MustCompile(`<br[^>]*>`).ReplaceAllString(s, "<br/>")
+	s = regexp.MustCompile(`<img([^>]*)>`).ReplaceAllString(s, "<img$1/>")
+	s = regexp.MustCompile(`<input([^>]*)>`).ReplaceAllString(s, "<input$1/>")
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "&amp;amp;", "&amp;")
+	s = strings.ReplaceAll(s, "&amp;lt;", "&lt;")
+	s = strings.ReplaceAll(s, "&amp;gt;", "&gt;")
+	s = strings.ReplaceAll(s, "&amp;quot;", "&quot;")
+	return s
 }

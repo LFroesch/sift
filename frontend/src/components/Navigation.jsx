@@ -1,106 +1,72 @@
-import { Link, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
+import { postAPI } from '../api/client'
+import { useState } from 'react'
 
-function Navigation({ currentUser, setCurrentUser }) {
-  const location = useLocation()
+const links = [
+  { to: '/', label: 'Home' },
+  { to: '/feeds', label: 'Feeds' },
+  { to: '/bookmarks', label: 'Bookmarks' },
+]
 
-  const isActive = (path) => location.pathname === path
+export default function Navigation() {
+  const [fetching, setFetching] = useState(false)
+  const [result, setResult] = useState(null)
+
+  const handleFetch = async () => {
+    setFetching(true)
+    setResult(null)
+    try {
+      const r = await postAPI.fetchFeeds()
+      setResult(r.newPosts > 0 ? `+${r.newPosts} new` : 'Up to date')
+      setTimeout(() => setResult(null), 3000)
+    } catch {
+      setResult('Failed')
+      setTimeout(() => setResult(null), 3000)
+    }
+    setFetching(false)
+  }
 
   return (
-    <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                🐊 Gator RSS Reader
-              </h1>
-            </div>
-            <div className="hidden sm:ml-8 sm:flex sm:space-x-1">
-              <Link
-                to="/"
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  isActive('/') 
-                    ? 'bg-blue-100 text-blue-700 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+    <nav className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-sm border-b border-zinc-800/40">
+      <div className="max-w-7xl mx-auto px-8 flex items-center justify-between h-14">
+        <div className="flex items-center gap-10">
+          <span className="text-base font-bold text-yellow-400 tracking-tight select-none">sift</span>
+          <div className="flex gap-1">
+            {links.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `text-sm px-3 py-1.5 rounded-lg transition-all duration-150 ${
+                    isActive
+                      ? 'text-zinc-50 bg-zinc-800/80'
+                      : 'text-zinc-500 hover:text-zinc-200'
+                  }`
+                }
               >
-                <span className="mr-2">👥</span>
-                Users
-              </Link>
-              <Link
-                to="/feeds"
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  isActive('/feeds') 
-                    ? 'bg-blue-100 text-blue-700 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <span className="mr-2">📡</span>
-                Feeds
-              </Link>
-              <Link
-                to="/posts"
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  isActive('/posts') 
-                    ? 'bg-blue-100 text-blue-700 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <span className="mr-2">📰</span>
-                Posts
-              </Link>
-              <Link
-                to="/bookmarks"
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  isActive('/bookmarks') 
-                    ? 'bg-blue-100 text-blue-700 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <span className="mr-2">🔖</span>
-                Bookmarks
-              </Link>
-              <Link
-                to="/admin"
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  isActive('/admin') 
-                    ? 'bg-red-100 text-red-700 shadow-sm' 
-                    : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
-                }`}
-              >
-                <span className="mr-2">⚙️</span>
-                Admin
-              </Link>
-            </div>
+                {label}
+              </NavLink>
+            ))}
           </div>
-          <div className="flex items-center space-x-4">
-            {currentUser ? (
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-green-800">
-                    {currentUser.Name || currentUser.name}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setCurrentUser(null)}
-                  className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 hover:border-red-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-sm"
-                >
-                  <span className="mr-2">🚪</span>
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                <span className="text-sm text-gray-500">No user selected</span>
-              </div>
-            )}
-          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {result && (
+            <span className="text-xs text-zinc-400 animate-fade-up">{result}</span>
+          )}
+          <button
+            onClick={handleFetch}
+            disabled={fetching}
+            className="text-sm px-4 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 hover:border-zinc-600/60 transition-all duration-150 disabled:opacity-30"
+          >
+            {fetching ? (
+              <span className="flex items-center gap-2">
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                Fetching
+              </span>
+            ) : 'Fetch feeds'}
+          </button>
         </div>
       </div>
     </nav>
   )
 }
-
-export default Navigation

@@ -5,61 +5,42 @@
 package database
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type Bookmark struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserID    uuid.UUID
-	PostID    uuid.UUID
-}
-
 type Feed struct {
-	ID            uuid.UUID
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	Name          string
-	Url           string
-	UserID        uuid.UUID
-	LastFetchedAt sql.NullTime
+	ID            uuid.UUID  `json:"id"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	Name          string     `json:"name"`
+	Url           string     `json:"url"`
+	LastFetchedAt *time.Time `json:"last_fetched_at"`
 }
 
-type FeedFollow struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserID    uuid.UUID
-	FeedID    uuid.UUID
+type FeedGroup struct {
+	FeedID  uuid.UUID `json:"feed_id"`
+	GroupID uuid.UUID `json:"group_id"`
+}
+
+type Group struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
 }
 
 type Post struct {
-	ID          uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Title       string
-	Url         string
-	Description sql.NullString
-	PublishedAt sql.NullTime
-	FeedID      uuid.UUID
-}
-
-type PostRead struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserID    uuid.UUID
-	PostID    uuid.UUID
-	ReadAt    time.Time
-}
-
-type User struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Name      string
+	ID           uuid.UUID  `json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Title        string     `json:"title"`
+	Url          string     `json:"url"`
+	Description  *string    `json:"description"`
+	PublishedAt  *time.Time `json:"published_at"`
+	FeedID       uuid.UUID  `json:"feed_id"`
+	IsRead       bool       `json:"is_read"`
+	IsBookmarked bool       `json:"is_bookmarked"`
+	ThumbnailUrl *string    `json:"thumbnail_url"`
 }

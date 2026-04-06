@@ -1,23 +1,67 @@
 -- name: CreatePost :one
-INSERT INTO posts (id, created_at, updated_at, title, url, description, published_at, feed_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO posts (title, url, description, published_at, feed_id, thumbnail_url)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
--- name: GetPostsForUser :many
-SELECT posts.*, feeds.name AS feed_name FROM posts
-JOIN feed_follows ON feed_follows.feed_id = posts.feed_id
-JOIN feeds ON posts.feed_id = feeds.id
-WHERE feed_follows.user_id = $1
-ORDER BY posts.published_at DESC
-LIMIT $2;
+-- name: GetPosts :many
+SELECT p.*, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+ORDER BY p.published_at DESC NULLS LAST
+LIMIT $1 OFFSET $2;
 
--- name: GetPostsForUserWithOffset :many
-SELECT posts.*, feeds.name AS feed_name FROM posts
-JOIN feed_follows ON feed_follows.feed_id = posts.feed_id
-JOIN feeds ON posts.feed_id = feeds.id
-WHERE feed_follows.user_id = $1
-ORDER BY posts.published_at DESC
+-- name: GetPostsByFeed :many
+SELECT p.*, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+WHERE p.feed_id = $1
+ORDER BY p.published_at DESC NULLS LAST
 LIMIT $2 OFFSET $3;
+
+-- name: GetPostsByGroup :many
+SELECT p.*, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+JOIN feed_groups fg ON f.id = fg.feed_id
+WHERE fg.group_id = $1
+ORDER BY p.published_at DESC NULLS LAST
+LIMIT $2 OFFSET $3;
+
+-- name: GetBookmarkedPosts :many
+SELECT p.*, f.name AS feed_name
+FROM posts p
+JOIN feeds f ON p.feed_id = f.id
+WHERE p.is_bookmarked = TRUE
+ORDER BY p.published_at DESC NULLS LAST
+LIMIT $1 OFFSET $2;
+
+-- name: ToggleBookmark :one
+UPDATE posts SET is_bookmarked = NOT is_bookmarked, updated_at = NOW()
+WHERE id = $1 RETURNING *;
+
+-- name: MarkPostRead :exec
+UPDATE posts SET is_read = TRUE, updated_at = NOW() WHERE id = $1;
+
+-- name: MarkPostUnread :exec
+UPDATE posts SET is_read = FALSE, updated_at = NOW() WHERE id = $1;
 
 -- name: DeleteAllPosts :exec
 DELETE FROM posts;
+
+-- name: GetStats :one
+SELECT
+    COUNT(*) AS total_posts,
+    COUNT(*) FILTER (WHERE NOT is_read) AS unread_count,
+    COUNT(*) FILTER (WHERE is_bookmarked) AS bookmarked_count,
+    COUNT(*) FILTER (WHERE published_at >= NOW() - INTERVAL '24 hours') AS new_today
+FROM posts;
+
+-- name: GetStatsByGroup :one
+SELECT
+    COUNT(*) AS total_posts,
+    COUNT(*) FILTER (WHERE NOT p.is_read) AS unread_count,
+    COUNT(*) FILTER (WHERE p.is_bookmarked) AS bookmarked_count,
+    COUNT(*) FILTER (WHERE p.published_at >= NOW() - INTERVAL '24 hours') AS new_today
+FROM posts p
+JOIN feed_groups fg ON p.feed_id = fg.feed_id
+WHERE fg.group_id = $1;

@@ -1,75 +1,53 @@
-import axios from 'axios'
+const API = '/api'
 
-const API_BASE_URL = 'http://localhost:5005/api'
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
-// User API
-export const userAPI = {
-  getAll: () => apiClient.get('/users'),
-  getByName: (name) => apiClient.get(`/users/${name}`),
-  create: (userData) => apiClient.post('/users', userData),
-  update: (userId, userData) => apiClient.put(`/users/${userId}`, userData),
-  delete: (userId) => apiClient.delete(`/users/${userId}`),
+async function request(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } }
+  if (body) opts.body = JSON.stringify(body)
+  const res = await fetch(`${API}${path}`, opts)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error || res.statusText)
+  }
+  return res.json()
 }
 
-// Feed API
 export const feedAPI = {
-  getAll: () => apiClient.get('/feeds'),
-  create: (feedData) => apiClient.post('/feeds', feedData),
-  update: (feedId, feedData) => apiClient.put(`/feeds/${feedId}`, feedData),
-  delete: (feedId) => apiClient.delete(`/feeds/${feedId}`),
+  getAll: () => request('GET', '/feeds'),
+  create: (data) => request('POST', '/feeds', data),
+  update: (id, data) => request('PUT', `/feeds/${id}`, data),
+  delete: (id) => request('DELETE', `/feeds/${id}`),
 }
 
-// Follow API
-export const followAPI = {
-  getUserFollows: (userId) => apiClient.get(`/follows/${userId}`),
-  follow: (followData) => {
-    console.log('Making follow request with data:', followData)
-    return apiClient.post('/follows', followData)
-  },
-  unfollow: (userId, feedUrl) => {
-    console.log('Making unfollow request:', { userId, feedUrl })
-    return apiClient.delete(`/follows/${userId}?feedUrl=${encodeURIComponent(feedUrl)}`)
-  },
-}
-
-// Post API
 export const postAPI = {
-  getUserPosts: (userId, limit = 10, offset = 0) => 
-    apiClient.get(`/posts/${userId}?limit=${limit}&offset=${offset}`),
-  getUserPostsByFeed: (userId, feedId, limit = 10, offset = 0) => 
-    apiClient.get(`/posts/${userId}?limit=${limit}&offset=${offset}&feed_id=${feedId}`),
-  fetchUserFeeds: (userId) =>
-    apiClient.post(`/feeds/fetch/${userId}`),
+  get: (limit = 20, offset = 0, { feedId, groupId } = {}) => {
+    let url = `/posts?limit=${limit}&offset=${offset}`
+    if (groupId) url += `&group_id=${groupId}`
+    else if (feedId) url += `&feed_id=${feedId}`
+    return request('GET', url)
+  },
+  getBookmarks: (limit = 20, offset = 0) =>
+    request('GET', `/bookmarks?limit=${limit}&offset=${offset}`),
+  toggleBookmark: (id) => request('PATCH', `/posts/${id}/bookmark`),
+  markRead: (id) => request('PATCH', `/posts/${id}/read`),
+  markUnread: (id) => request('PATCH', `/posts/${id}/unread`),
+  fetchFeeds: () => request('POST', '/fetch'),
+  deleteAll: () => request('DELETE', '/posts'),
 }
 
-// Bookmark API
-export const bookmarkAPI = {
-  getUserBookmarks: (userId, limit = 10, offset = 0) =>
-    apiClient.get(`/bookmarks/${userId}?limit=${limit}&offset=${offset}`),
-  createBookmark: (bookmarkData) =>
-    apiClient.post('/bookmarks', bookmarkData),
-  deleteBookmark: (userId, postId) =>
-    apiClient.delete(`/bookmarks/${userId}/${postId}`),
+export const groupAPI = {
+  getAll: () => request('GET', '/groups'),
+  create: (name) => request('POST', '/groups', { name }),
+  update: (id, name) => request('PUT', `/groups/${id}`, { name }),
+  delete: (id) => request('DELETE', `/groups/${id}`),
+  addFeed: (groupId, feedId) => request('POST', `/groups/${groupId}/feeds/${feedId}`),
+  removeFeed: (groupId, feedId) => request('DELETE', `/groups/${groupId}/feeds/${feedId}`),
+  getFeeds: (groupId) => request('GET', `/groups/${groupId}/feeds`),
 }
 
-// Read status API
-export const readStatusAPI = {
-  markRead: (readData) =>
-    apiClient.post('/reads', readData),
-  markUnread: (userId, postId) =>
-    apiClient.delete(`/reads/${userId}/${postId}`),
+export const statsAPI = {
+  get: (groupId) => {
+    let url = '/stats'
+    if (groupId) url += `?group_id=${groupId}`
+    return request('GET', url)
+  },
 }
-
-// Admin API
-export const adminAPI = {
-  deletePosts: () => apiClient.delete('/admin/posts'),
-}
-
-export default apiClient
