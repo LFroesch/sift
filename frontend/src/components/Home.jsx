@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Masonry from 'react-masonry-css'
 import { postAPI, feedAPI, groupAPI, statsAPI } from '../api/client'
 
@@ -31,6 +31,9 @@ export default function Home() {
   const [offset, setOffset] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const searchDebounce = useRef(null)
   const limit = 32
 
   const loadStats = useCallback(async () => {
@@ -84,7 +87,9 @@ export default function Home() {
   const loadMore = async () => {
     setLoading(true)
     try {
-      const data = await postAPI.get(limit, offset, { groupId: activeGroup || undefined, feedId: activeFeed || undefined })
+      const data = isSearching
+        ? await postAPI.search(searchQuery.trim(), limit, offset)
+        : await postAPI.get(limit, offset, { groupId: activeGroup || undefined, feedId: activeFeed || undefined })
       setPosts(prev => [...prev, ...(data.posts || [])])
       setHasMore(data.hasMore)
       setOffset(prev => prev + limit)
@@ -92,6 +97,33 @@ export default function Home() {
       console.error(err)
     }
     setLoading(false)
+  }
+
+  const handleSearch = (value) => {
+    setSearchQuery(value)
+    clearTimeout(searchDebounce.current)
+    if (!value.trim()) {
+      setIsSearching(false)
+      return
+    }
+    searchDebounce.current = setTimeout(async () => {
+      setIsSearching(true)
+      setLoading(true)
+      try {
+        const data = await postAPI.search(value.trim(), limit, 0)
+        setPosts(data.posts || [])
+        setHasMore(data.hasMore)
+        setOffset(limit)
+      } catch (err) {
+        console.error(err)
+      }
+      setLoading(false)
+    }, 300)
+  }
+
+  const clearSearch = () => {
+    setSearchQuery('')
+    setIsSearching(false)
   }
 
   const toggleBookmark = async (e, id) => {
@@ -115,10 +147,10 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
-      {/* Header area: stats + group selector */}
+      {/* Header area: stats + group selector + search */}
       <div className="mb-8">
         {/* Stats */}
-        {stats && (
+        {stats && !isSearching && (
           <div className="flex gap-8 mb-6">
             <Stat value={stats.unread_count} label="unread" />
             <Stat value={stats.new_today} label="new today" />
@@ -127,9 +159,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* Group tabs + feed filter */}
+        {/* Group tabs + feed filter + search */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          {groups.length > 0 && (
+          {!isSearching && groups.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               <Tab active={!activeGroup} onClick={() => { setActiveGroup(null); setActiveFeed(null) }}>All</Tab>
               {groups.map(g => (
@@ -139,18 +171,38 @@ export default function Home() {
               ))}
             </div>
           )}
-          {!activeGroup && feeds.length > 0 && (
-            <select
-              value={activeFeed || ''}
-              onChange={e => setActiveFeed(e.target.value || null)}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-400 focus:border-zinc-600 focus:outline-none"
-            >
-              <option value="">All feeds</option>
-              {feeds.map(f => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
+          {isSearching && (
+            <div className="text-sm text-zinc-500">
+              Search results for <span className="text-zinc-300">"{searchQuery}"</span>
+              <button onClick={clearSearch} className="ml-3 text-zinc-600 hover:text-zinc-400 transition-colors">✕ clear</button>
+            </div>
           )}
+          <div className="flex items-center gap-2 ml-auto">
+            {!isSearching && !activeGroup && feeds.length > 0 && (
+              <select
+                value={activeFeed || ''}
+                onChange={e => setActiveFeed(e.target.value || null)}
+                className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-400 focus:border-zinc-600 focus:outline-none"
+              >
+                <option value="">All feeds</option>
+                {feeds.map(f => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+            )}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => handleSearch(e.target.value)}
+                placeholder="Search posts..."
+                className="bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-1.5 text-sm text-zinc-300 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none w-48 focus:w-64 transition-all duration-200"
+              />
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -7,8 +7,7 @@ run: build
 	./bin/sift
 
 dev:
-	go run cmd/server/main.go &
-	cd frontend && npm run dev
+	go run cmd/server/main.go & GO_PID=$$!; cd frontend && npm run dev; kill $$GO_PID 2>/dev/null || true
 
 frontend-dev:
 	cd frontend && npm run dev
@@ -26,6 +25,9 @@ reset-db: migrate-down migrate-up
 
 sqlc:
 	sqlc generate
+
+seed:
+	psql "$(DB_URL)" -f sql/seeds.sql
 
 psql:
 	psql "$(DB_URL)"

@@ -23,6 +23,9 @@ import (
 	"golang.org/x/text/transform"
 )
 
+// sentinel so callers can distinguish clean shutdown from real errors
+var ErrServerClosed = http.ErrServerClosed
+
 type Server struct {
 	db            *database.Queries
 	fetchInterval string
@@ -32,20 +35,25 @@ func NewServer(db *database.Queries, fetchInterval string) *Server {
 	return &Server{db: db, fetchInterval: fetchInterval}
 }
 
-func (s *Server) Start(port string) error {
+func (s *Server) Start(ctx context.Context, port string) error {
 	r := gin.Default()
 
 	corsOrigin := os.Getenv("CORS_ORIGIN")
 	if corsOrigin == "" {
 		corsOrigin = "*"
 	}
+	origins := strings.Split(corsOrigin, ",")
+	for i, o := range origins {
+		origins[i] = strings.TrimSpace(o)
+	}
+	useWildcard := len(origins) == 1 && origins[0] == "*"
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{corsOrigin},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: corsOrigin != "*",
+		AllowCredentials: !useWildcard,
 		MaxAge:           12 * time.Hour,
 	}))
 
@@ -57,6 +65,7 @@ func (s *Server) Start(port string) error {
 		api.DELETE("/feeds/:id", s.deleteFeed)
 
 		api.GET("/posts", s.getPosts)
+		api.GET("/search", s.searchPosts)
 		api.GET("/bookmarks", s.getBookmarks)
 		api.PATCH("/posts/:id/bookmark", s.toggleBookmark)
 		api.PATCH("/posts/:id/read", s.markRead)
@@ -76,9 +85,23 @@ func (s *Server) Start(port string) error {
 		api.DELETE("/posts", s.deleteAllPosts)
 	}
 
-	s.startFetcher()
+	s.startFetcher(ctx)
 
-	return r.Run(":" + port)
+	srv := &http.Server{Addr: ":" + port, Handler: r}
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("Shutdown error: %v", err)
+		}
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 // --- Feed handlers ---
@@ -221,6 +244,23 @@ func (s *Server) getPosts(c *gin.Context) {
 		Limit:  int32(limit),
 		Offset: int32(offset),
 	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"posts": posts, "hasMore": len(posts) == limit})
+}
+
+func (s *Server) searchPosts(c *gin.Context) {
+	q := strings.TrimSpace(c.Query("q"))
+	if q == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "q is required"})
+		return
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "40"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	posts, err := s.db.SearchPosts(c.Request.Context(), q, int32(limit), int32(offset))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -461,7 +501,7 @@ func (s *Server) fetchAllFeeds(c *gin.Context) {
 	})
 }
 
-func (s *Server) startFetcher() {
+func (s *Server) startFetcher(ctx context.Context) {
 	interval, err := time.ParseDuration(s.fetchInterval)
 	if err != nil {
 		log.Printf("Invalid FETCH_INTERVAL %q, defaulting to 30m", s.fetchInterval)
@@ -469,7 +509,11 @@ func (s *Server) startFetcher() {
 	}
 
 	go func() {
-		time.Sleep(5 * time.Second)
+		select {
+		case <-time.After(5 * time.Second):
+		case <-ctx.Done():
+			return
+		}
 		newPosts, fetched, total, err := s.fetchFeeds()
 		if err != nil {
 			log.Printf("Initial fetch error: %v", err)
@@ -479,12 +523,17 @@ func (s *Server) startFetcher() {
 
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
-		for range ticker.C {
-			newPosts, fetched, total, err := s.fetchFeeds()
-			if err != nil {
-				log.Printf("Fetch error: %v", err)
-			} else if newPosts > 0 {
-				log.Printf("Fetched %d new posts from %d/%d feeds", newPosts, fetched, total)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				newPosts, fetched, total, err := s.fetchFeeds()
+				if err != nil {
+					log.Printf("Fetch error: %v", err)
+				} else if newPosts > 0 {
+					log.Printf("Fetched %d new posts from %d/%d feeds", newPosts, fetched, total)
+				}
 			}
 		}
 	}()

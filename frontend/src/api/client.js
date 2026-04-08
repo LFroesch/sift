@@ -25,6 +25,8 @@ export const postAPI = {
     else if (feedId) url += `&feed_id=${feedId}`
     return request('GET', url)
   },
+  search: (q, limit = 40, offset = 0) =>
+    request('GET', `/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`),
   getBookmarks: (limit = 20, offset = 0) =>
     request('GET', `/bookmarks?limit=${limit}&offset=${offset}`),
   toggleBookmark: (id) => request('PATCH', `/posts/${id}/bookmark`),
