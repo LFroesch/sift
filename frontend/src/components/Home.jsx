@@ -1,88 +1,258 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import Masonry from 'react-masonry-css'
-import { postAPI, feedAPI, groupAPI, statsAPI } from '../api/client'
+import { postAPI, statsAPI } from '../api/client'
 
-const breakpoints = { default: 4, 1280: 3, 1024: 2, 640: 1 }
-
-// Deterministic color from string for feed badges & placeholders
 function feedColor(name) {
-  const colors = [
-    ['#7c3aed', '#a78bfa'], // violet
-    ['#2563eb', '#60a5fa'], // blue
-    ['#0891b2', '#22d3ee'], // cyan
-    ['#059669', '#34d399'], // emerald
-    ['#d97706', '#fbbf24'], // amber
-    ['#dc2626', '#f87171'], // red
-    ['#db2777', '#f472b6'], // pink
-    ['#7c3aed', '#c084fc'], // purple
-  ]
+  const colors = ['#7c3aed','#2563eb','#0891b2','#059669','#d97706','#dc2626','#db2777','#7c3aed']
   let hash = 0
   for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
   return colors[Math.abs(hash) % colors.length]
 }
 
-export default function Home() {
+function relativeTime(dateStr) {
+  if (!dateStr) return ''
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 2) return 'now'
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h`
+  return `${Math.floor(h / 24)}d`
+}
+
+function normalizeDescription(text) {
+  if (!text) return { description: null, attribution: null }
+
+  let cleaned = text
+    .replace(/\[link\]/gi, '')
+    .replace(/\[comments\]/gi, '')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+
+  let attribution = null
+  const redditSubmittedByMatch = cleaned.match(/\bsubmitted by\s+\/u\/\*?([A-Za-z0-9_-]+)\*?/i)
+  const submittedByMatch = cleaned.match(/\bsubmitted by\s+([A-Za-z0-9_.-]+)/i)
+  const authorMatch = cleaned.match(/\bauthor:\s*([A-Za-z0-9_.-]+)/i)
+
+  if (redditSubmittedByMatch) {
+    attribution = redditSubmittedByMatch[1]
+    cleaned = cleaned.replace(redditSubmittedByMatch[0], '').replace(/\s{2,}/g, ' ').trim()
+  } else if (submittedByMatch) {
+    attribution = submittedByMatch[1]
+    cleaned = cleaned.replace(submittedByMatch[0], '').replace(/\s{2,}/g, ' ').trim()
+  } else if (authorMatch) {
+    attribution = authorMatch[1]
+    cleaned = cleaned.replace(authorMatch[0], '').replace(/\s{2,}/g, ' ').trim()
+  }
+
+  return { description: cleaned || null, attribution }
+}
+
+// ── Cleanup Modal ─────────────────────────────────────────────────────────────
+
+function CleanupModal({ onClose, onDone }) {
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState(null)
+
+  const run = async (fn, label) => {
+    if (!confirm(`${label}?`)) return
+    setBusy(true)
+    try { await fn(); setResult(label + ' done.'); onDone() }
+    catch (e) { setResult('Error: ' + e.message) }
+    setBusy(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-sm shadow-2xl p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-base font-semibold text-zinc-100">Cleanup</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="flex flex-col gap-3">
+          <CleanupBtn label="Delete read & unsaved posts" disabled={busy} onClick={() => run(postAPI.deleteReadUnbookmarked, 'Delete read & unsaved posts')} />
+          <CleanupBtn label="Delete all unsaved posts" disabled={busy} onClick={() => run(postAPI.deleteUnbookmarked, 'Delete all unsaved posts')} />
+          <CleanupBtn label="Delete ALL posts" danger disabled={busy} onClick={() => run(postAPI.deleteAll, 'Delete ALL posts')} />
+        </div>
+        {result && <p className="mt-4 text-xs text-zinc-500">{result}</p>}
+      </div>
+    </div>
+  )
+}
+
+function CleanupBtn({ label, danger, disabled, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full px-4 py-3 rounded-xl text-sm font-medium border transition-all disabled:opacity-40 text-left ${
+        danger
+          ? 'border-red-900/60 text-red-400 hover:bg-red-950/40 hover:border-red-800'
+          : 'border-zinc-800 text-zinc-300 hover:bg-zinc-800/60 hover:border-zinc-700'
+      }`}
+    >
+      {label}
+    </button>
+  )
+}
+
+// ── Post Row ──────────────────────────────────────────────────────────────────
+
+function PostRow({ post, onClick, onBookmark, onToggleRead }) {
+  const color = feedColor(post.feed_name)
+  const time = relativeTime(post.published_at)
+  const { description, attribution } = normalizeDescription(post.description)
+  const hasDescription = Boolean(description)
+  const hasThumbnail = Boolean(post.thumbnail_url)
+
+  return (
+    <div
+      onClick={onClick}
+      className={`group cursor-pointer border-b border-zinc-800/30 transition-colors hover:bg-zinc-900/50 ${
+        post.is_read ? 'opacity-70' : ''
+      }`}
+    >
+      <div className="flex items-start gap-5 px-6 py-6 min-h-[150px]">
+        {hasThumbnail && (
+          <img
+            src={post.thumbnail_url}
+            alt=""
+            className="w-32 h-24 rounded-xl object-cover flex-shrink-0 opacity-90 mt-0.5"
+            loading="lazy"
+            onError={e => { e.target.style.display = 'none' }}
+          />
+        )}
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-base font-semibold uppercase tracking-wider flex-shrink-0" style={{ color }}>
+              {post.feed_name}
+            </span>
+            <span className="text-base text-zinc-500 flex-shrink-0">{time}</span>
+            {attribution && (
+              <span className="text-base text-zinc-500 truncate min-w-0">
+                by {attribution}
+              </span>
+            )}
+          </div>
+          <p className={`text-xl leading-snug mb-2 ${
+            post.is_read ? 'text-zinc-500' : 'text-zinc-100 font-semibold'
+          }`}>
+            {post.title}
+          </p>
+          {description && (
+            <p className="text-lg leading-relaxed text-zinc-400 whitespace-pre-line">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col self-stretch justify-between border-l border-zinc-800/60 pl-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <ActionBtn
+            active={post.is_read}
+            onClick={onToggleRead}
+            title={post.is_read ? 'Mark unread' : 'Mark read'}
+          >
+            <svg className="w-4 h-4" fill={post.is_read ? 'currentColor' : 'none'} viewBox="0 0 16 16" stroke="currentColor" strokeWidth={1.5}>
+              <circle cx="8" cy="8" r="5" />
+            </svg>
+          </ActionBtn>
+          <ActionBtn
+            active={post.is_bookmarked}
+            onClick={onBookmark}
+            title={post.is_bookmarked ? 'Unsave' : 'Save'}
+          >
+            <svg className="w-4 h-4" fill={post.is_bookmarked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+            </svg>
+          </ActionBtn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ActionBtn({ active, onClick, title, children }) {
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onClick() }}
+      title={title}
+      className={`w-9 flex-1 min-h-10 rounded-lg border border-transparent transition-colors flex items-center justify-center ${
+        active
+          ? 'text-yellow-400 hover:text-yellow-300 hover:bg-zinc-800/80'
+          : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/80'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ── Home ──────────────────────────────────────────────────────────────────────
+
+export default function Home({ activeGroup, activeFeed }) {
   const [posts, setPosts] = useState([])
-  const [feeds, setFeeds] = useState([])
-  const [groups, setGroups] = useState([])
-  const [stats, setStats] = useState(null)
-  const [activeGroup, setActiveGroup] = useState(null)
-  const [activeFeed, setActiveFeed] = useState(null)
   const [offset, setOffset] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const [newCount, setNewCount] = useState(0)
+  const [showCleanup, setShowCleanup] = useState(false)
+  const [fetching, setFetching] = useState(false)
+  const [fetchResult, setFetchResult] = useState(null)
+  const [stats, setStats] = useState(null)
   const searchDebounce = useRef(null)
-  const limit = 32
+  const knownIds = useRef(new Set())
+  const limit = 50
 
-  const loadStats = useCallback(async () => {
-    try { setStats(await statsAPI.get(activeGroup || undefined)) } catch {}
+  const loadStats = useCallback(() => {
+    statsAPI.get(activeGroup || undefined).then(setStats).catch(() => {})
   }, [activeGroup])
 
-  useEffect(() => {
-    groupAPI.getAll().then(setGroups).catch(() => {})
-    feedAPI.getAll().then(f => setFeeds(f || [])).catch(() => {})
-  }, [])
+  const loadPosts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await postAPI.get(limit, 0, { groupId: activeGroup || undefined, feedId: activeFeed || undefined })
+      const incoming = data.posts || []
+      knownIds.current = new Set(incoming.map(p => p.id))
+      setPosts(incoming)
+      setHasMore(data.hasMore)
+      setOffset(limit)
+    } catch (err) { console.error(err) }
+    setLoading(false)
+  }, [activeGroup, activeFeed])
 
   useEffect(() => {
     setPosts([])
-    setOffset(0)
-    setActiveFeed(null)
-    setLoading(true)
-    const load = async () => {
-      try {
-        const data = await postAPI.get(limit, 0, { groupId: activeGroup || undefined })
-        setPosts(data.posts || [])
-        setHasMore(data.hasMore)
-        setOffset(limit)
-      } catch (err) {
-        console.error('Failed to load posts:', err)
-      }
-      setLoading(false)
-    }
-    load()
+    setNewCount(0)
+    setSearchQuery('')
+    setIsSearching(false)
+    loadPosts()
     loadStats()
-  }, [activeGroup, loadStats])
+  }, [loadPosts, loadStats])
 
+  // Auto-refresh every 60s
   useEffect(() => {
-    if (activeFeed === null && !activeGroup) return // already handled above
-    setPosts([])
-    setOffset(0)
-    setLoading(true)
-    const load = async () => {
+    if (isSearching) return
+    const poll = async () => {
       try {
         const data = await postAPI.get(limit, 0, { groupId: activeGroup || undefined, feedId: activeFeed || undefined })
-        setPosts(data.posts || [])
-        setHasMore(data.hasMore)
-        setOffset(limit)
-      } catch (err) {
-        console.error('Failed to load posts:', err)
-      }
-      setLoading(false)
+        const incoming = data.posts || []
+        const fresh = incoming.filter(p => !knownIds.current.has(p.id))
+        if (fresh.length > 0) {
+          fresh.forEach(p => knownIds.current.add(p.id))
+          setPosts(prev => [...fresh, ...prev])
+          setNewCount(n => n + fresh.length)
+        }
+      } catch {}
     }
-    load()
-  }, [activeFeed])
+    const id = setInterval(poll, 60_000)
+    return () => clearInterval(id)
+  }, [activeGroup, activeFeed, isSearching])
 
   const loadMore = async () => {
     setLoading(true)
@@ -93,19 +263,14 @@ export default function Home() {
       setPosts(prev => [...prev, ...(data.posts || [])])
       setHasMore(data.hasMore)
       setOffset(prev => prev + limit)
-    } catch (err) {
-      console.error(err)
-    }
+    } catch (err) { console.error(err) }
     setLoading(false)
   }
 
   const handleSearch = (value) => {
     setSearchQuery(value)
     clearTimeout(searchDebounce.current)
-    if (!value.trim()) {
-      setIsSearching(false)
-      return
-    }
+    if (!value.trim()) { setIsSearching(false); return }
     searchDebounce.current = setTimeout(async () => {
       setIsSearching(true)
       setLoading(true)
@@ -114,259 +279,177 @@ export default function Home() {
         setPosts(data.posts || [])
         setHasMore(data.hasMore)
         setOffset(limit)
-      } catch (err) {
-        console.error(err)
-      }
+      } catch (err) { console.error(err) }
       setLoading(false)
     }, 300)
   }
 
-  const clearSearch = () => {
-    setSearchQuery('')
-    setIsSearching(false)
+  const updatePost = (id, changes) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, ...changes } : p))
   }
 
-  const toggleBookmark = async (e, id) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const openPost = async (post) => {
+    if (!post.is_read) {
+      try {
+        await postAPI.markRead(post.id)
+        updatePost(post.id, { is_read: true })
+      } catch {}
+    }
+    window.open(post.url, '_blank', 'noopener,noreferrer')
+  }
+
+  const toggleBookmark = async (post) => {
     try {
-      const updated = await postAPI.toggleBookmark(id)
-      setPosts(posts.map(p => p.id === id ? { ...p, is_bookmarked: updated.is_bookmarked } : p))
+      const updated = await postAPI.toggleBookmark(post.id)
+      updatePost(post.id, { is_bookmarked: updated.is_bookmarked })
     } catch {}
   }
 
-  const toggleRead = async (e, post) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const toggleRead = async (post) => {
     try {
       if (post.is_read) await postAPI.markUnread(post.id)
       else await postAPI.markRead(post.id)
-      setPosts(posts.map(p => p.id === post.id ? { ...p, is_read: !p.is_read } : p))
+      updatePost(post.id, { is_read: !post.is_read })
     } catch {}
   }
 
-  return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
-      {/* Header area: stats + group selector + search */}
-      <div className="mb-8">
-        {/* Stats */}
-        {stats && !isSearching && (
-          <div className="flex gap-8 mb-6">
-            <Stat value={stats.unread_count} label="unread" />
-            <Stat value={stats.new_today} label="new today" />
-            <Stat value={stats.bookmarked_count} label="saved" />
-            <Stat value={stats.total_posts} label="total" />
-          </div>
-        )}
+  const handleFetch = async () => {
+    setFetching(true)
+    setFetchResult(null)
+    try {
+      const result = await postAPI.fetchFeeds()
+      setFetchResult(result.newPosts > 0 ? `+${result.newPosts} new` : 'Up to date')
+      await loadPosts()
+      loadStats()
+      setNewCount(0)
+    } catch {
+      setFetchResult('Fetch failed')
+    }
+    setFetching(false)
+    setTimeout(() => setFetchResult(null), 3000)
+  }
 
-        {/* Group tabs + feed filter + search */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          {!isSearching && groups.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              <Tab active={!activeGroup} onClick={() => { setActiveGroup(null); setActiveFeed(null) }}>All</Tab>
-              {groups.map(g => (
-                <Tab key={g.id} active={activeGroup === g.id} onClick={() => { setActiveGroup(g.id); setActiveFeed(null) }}>
-                  {g.name}
-                </Tab>
-              ))}
-            </div>
-          )}
-          {isSearching && (
-            <div className="text-sm text-zinc-500">
-              Search results for <span className="text-zinc-300">"{searchQuery}"</span>
-              <button onClick={clearSearch} className="ml-3 text-zinc-600 hover:text-zinc-400 transition-colors">✕ clear</button>
-            </div>
-          )}
-          <div className="flex items-center gap-2 ml-auto">
-            {!isSearching && !activeGroup && feeds.length > 0 && (
-              <select
-                value={activeFeed || ''}
-                onChange={e => setActiveFeed(e.target.value || null)}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-400 focus:border-zinc-600 focus:outline-none"
-              >
-                <option value="">All feeds</option>
-                {feeds.map(f => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </select>
-            )}
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => handleSearch(e.target.value)}
-                placeholder="Search posts..."
-                className="bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-1.5 text-sm text-zinc-300 placeholder-zinc-700 focus:border-zinc-600 focus:outline-none w-48 focus:w-64 transition-all duration-200"
-              />
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+  return (
+    <div className="flex flex-col min-w-0 overflow-hidden flex-1">
+      {/* Search */}
+      <div className="px-4 py-3.5 border-b border-zinc-800/50">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <svg className="w-5 h-5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => handleSearch(e.target.value)}
+            placeholder="Search…"
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-11 pr-10 py-3 text-lg text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none transition-colors"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(''); setIsSearching(false) }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Card grid */}
-      {posts.length > 0 && (
-        <Masonry breakpointCols={breakpoints} className="masonry-grid" columnClassName="masonry-grid_column">
-          {posts.map((post, i) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              index={i}
-              onBookmark={e => toggleBookmark(e, post.id)}
-              onToggleRead={e => toggleRead(e, post)}
-            />
-          ))}
-        </Masonry>
-      )}
-
-      {/* Empty state */}
-      {posts.length === 0 && !loading && (
-        <div className="flex flex-col items-center justify-center py-32 text-center">
-          <div className="text-4xl mb-4 opacity-20">&#9776;</div>
-          <p className="text-zinc-500 text-sm">
-            {activeGroup ? 'Nothing in this group yet.' : 'No posts yet.'}
-          </p>
-          <p className="text-zinc-600 text-xs mt-1">Add some feeds and hit fetch.</p>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-zinc-800/30">
+        <div className="flex items-center gap-3 min-w-0">
+          {isSearching ? (
+            <span className="text-base text-zinc-500">
+              Results for <span className="text-zinc-300">"{searchQuery}"</span>
+            </span>
+          ) : newCount > 0 ? (
+            <button onClick={() => setNewCount(0)} className="text-base text-zinc-400 hover:text-zinc-200 transition-colors">
+              {newCount} new — dismiss
+            </button>
+          ) : (
+            <span className="text-base text-zinc-600">{posts.length} posts</span>
+          )}
+          {stats && !isSearching && (
+            <span className="text-base text-zinc-600 flex items-center gap-2">
+              <span className="text-zinc-800">·</span>
+              <span>{stats.unread_count} unread</span>
+              <span className="text-zinc-800">·</span>
+              <span>{stats.new_today} today</span>
+              <span className="text-zinc-800">·</span>
+              <span>{stats.bookmarked_count} saved</span>
+            </span>
+          )}
         </div>
-      )}
-
-      {/* Load more */}
-      {hasMore && (
-        <div className="flex justify-center mt-10 mb-4">
+        <div className="flex items-center gap-2">
+          {fetchResult && (
+            <span className="text-base text-zinc-500">{fetchResult}</span>
+          )}
           <button
-            onClick={loadMore}
-            disabled={loading}
-            className="text-sm px-6 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all disabled:opacity-30"
+            onClick={handleFetch}
+            disabled={fetching}
+            className="px-4 py-2.5 rounded-lg text-base font-medium bg-zinc-800 border border-zinc-700/60 text-zinc-200 hover:bg-zinc-700 hover:text-white transition-colors disabled:opacity-50"
           >
-            {loading ? 'Loading...' : 'Load more'}
+            {fetching ? 'Fetching…' : 'Fetch feeds'}
+          </button>
+          <button
+            onClick={() => setShowCleanup(true)}
+            className="px-4 py-2.5 rounded-lg text-base font-medium bg-red-950/30 border border-red-900/50 text-red-300 hover:bg-red-900/40 hover:text-red-200 transition-colors"
+          >
+            Cleanup
           </button>
         </div>
-      )}
-    </div>
-  )
-}
+      </div>
 
-function Stat({ value, label }) {
-  return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-2xl font-semibold text-zinc-100 tabular-nums">{value}</span>
-      <span className="text-xs text-zinc-600">{label}</span>
-    </div>
-  )
-}
+      {/* List */}
+      <div className="flex-1 overflow-y-auto">
+        {posts.map(post => (
+          <PostRow
+            key={post.id}
+            post={post}
+            onClick={() => openPost(post)}
+            onBookmark={() => toggleBookmark(post)}
+            onToggleRead={() => toggleRead(post)}
+          />
+        ))}
 
-function Tab({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`text-[13px] px-3.5 py-1.5 rounded-lg border transition-all duration-150 ${
-        active
-          ? 'bg-zinc-800 border-zinc-700/60 text-zinc-200'
-          : 'border-transparent text-zinc-600 hover:text-zinc-400'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
-
-function PostCard({ post, index, onBookmark, onToggleRead }) {
-  const [color] = feedColor(post.feed_name)
-  const date = post.published_at
-    ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : ''
-
-  const desc = post.description
-    ? post.description.length > 120 ? post.description.slice(0, 120).trim() + '...' : post.description
-    : null
-
-  return (
-    <a
-      href={post.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block mb-5 animate-fade-up group"
-      style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
-    >
-      <div className={`rounded-xl overflow-hidden border border-zinc-800/40 bg-zinc-900/40 hover:bg-zinc-900/80 hover:border-zinc-700/50 transition-all duration-200 ${post.is_read ? 'opacity-40 hover:opacity-70' : ''}`}>
-        {/* Thumbnail or color bar */}
-        {post.thumbnail_url ? (
-          <div className="aspect-[16/10] overflow-hidden bg-zinc-900">
-            <img
-              src={post.thumbnail_url}
-              alt=""
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-              loading="lazy"
-              onError={e => {
-                // Replace broken image with color bar
-                const parent = e.target.parentElement
-                parent.style.height = '6px'
-                parent.style.background = color
-                parent.style.aspectRatio = 'unset'
-                e.target.style.display = 'none'
-              }}
-            />
+        {posts.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-zinc-600 text-base">No posts yet.</p>
+            <p className="text-zinc-700 text-sm mt-1">Add some feeds and hit fetch.</p>
           </div>
-        ) : (
-          <div className="h-1.5 w-full" style={{ background: color }} />
         )}
 
-        <div className="p-4">
-          {/* Feed badge + date */}
-          <div className="flex items-center justify-between mb-2.5">
-            <span
-              className="text-[10px] font-medium tracking-wide uppercase px-1.5 py-0.5 rounded"
-              style={{ color, backgroundColor: color + '15' }}
-            >
-              {post.feed_name}
-            </span>
-            {date && <span className="text-[11px] text-zinc-600 tabular-nums">{date}</span>}
+        {loading && (
+          <div className="flex justify-center py-8">
+            <svg className="w-5 h-5 text-zinc-700 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
           </div>
+        )}
 
-          {/* Title */}
-          <h3 className="text-[13px] font-medium leading-snug text-zinc-200 group-hover:text-white line-clamp-2 mb-1">
-            {post.title}
-          </h3>
-
-          {/* Description */}
-          {desc && (
-            <p className="text-[12px] leading-relaxed text-zinc-500 line-clamp-3 mb-3">
-              {desc}
-            </p>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-1 pt-1">
+        {hasMore && !loading && (
+          <div className="flex justify-center py-4">
             <button
-              onClick={onToggleRead}
-              className={`p-1.5 rounded-md transition-colors ${
-                post.is_read ? 'text-zinc-700 hover:text-blue-400' : 'text-blue-400/60 hover:text-blue-400'
-              }`}
-              title={post.is_read ? 'Mark unread' : 'Mark read'}
+              onClick={loadMore}
+              className="text-sm px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-all"
             >
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
-                {post.is_read
-                  ? <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  : <circle cx="8" cy="8" r="5" />
-                }
-              </svg>
-            </button>
-            <button
-              onClick={onBookmark}
-              className={`p-1.5 rounded-md transition-colors ${
-                post.is_bookmarked ? 'text-yellow-400' : 'text-zinc-700 hover:text-yellow-400'
-              }`}
-              title={post.is_bookmarked ? 'Unsave' : 'Save'}
-            >
-              <svg className="w-3.5 h-3.5" fill={post.is_bookmarked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-              </svg>
+              Load more
             </button>
           </div>
-        </div>
+        )}
       </div>
-    </a>
+
+      {showCleanup && (
+        <CleanupModal
+          onClose={() => setShowCleanup(false)}
+          onDone={() => { setShowCleanup(false); loadPosts() }}
+        />
+      )}
+    </div>
   )
 }

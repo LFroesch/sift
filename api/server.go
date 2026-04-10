@@ -13,9 +13,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/LFroesch/Sift/internal/database"
+	readability "github.com/go-shiori/go-readability"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -29,6 +31,7 @@ var ErrServerClosed = http.ErrServerClosed
 type Server struct {
 	db            *database.Queries
 	fetchInterval string
+	ogCache       sync.Map // url -> string (og:image URL or "")
 }
 
 func NewServer(db *database.Queries, fetchInterval string) *Server {
@@ -83,6 +86,10 @@ func (s *Server) Start(ctx context.Context, port string) error {
 
 		api.POST("/fetch", s.fetchAllFeeds)
 		api.DELETE("/posts", s.deleteAllPosts)
+		api.DELETE("/posts/read", s.deleteReadUnbookmarked)
+		api.DELETE("/posts/unbookmarked", s.deleteUnbookmarked)
+		api.GET("/og", s.getOGImage)
+		api.GET("/article", s.getArticle)
 	}
 
 	s.startFetcher(ctx)
@@ -141,9 +148,16 @@ func (s *Server) createFeed(c *gin.Context) {
 		return
 	}
 
+	// Resolve YouTube channel URLs to RSS feed URLs at creation time so we
+	// don't scrape the YouTube page on every fetch cycle.
+	resolvedURL := req.URL
+	if strings.Contains(req.URL, "youtube.com") && !strings.Contains(req.URL, "feeds/videos.xml") {
+		resolvedURL = resolveYouTubeURL(c.Request.Context(), req.URL)
+	}
+
 	feed, err := s.db.CreateFeed(c.Request.Context(), database.CreateFeedParams{
 		Name: req.Name,
-		Url:  req.URL,
+		Url:  resolvedURL,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -330,6 +344,22 @@ func (s *Server) deleteAllPosts(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "All posts deleted"})
+}
+
+func (s *Server) deleteReadUnbookmarked(c *gin.Context) {
+	if err := s.db.DeleteReadUnbookmarked(c.Request.Context()); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Read non-bookmarked posts deleted"})
+}
+
+func (s *Server) deleteUnbookmarked(c *gin.Context) {
+	if err := s.db.DeleteUnbookmarked(c.Request.Context()); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Non-bookmarked posts deleted"})
 }
 
 // --- Stats ---
@@ -548,7 +578,14 @@ func (s *Server) fetchFeeds() (int, int, int, error) {
 	totalNew := 0
 	fetched := 0
 
+	var lastReddit time.Time
 	for _, feed := range feeds {
+		if strings.Contains(feed.Url, "reddit.com") {
+			if since := time.Since(lastReddit); since < 2*time.Second {
+				time.Sleep(2*time.Second - since)
+			}
+			lastReddit = time.Now()
+		}
 		n, err := s.scrapeFeed(feed)
 		if err != nil {
 			log.Printf("Error scraping %s: %v", feed.Name, err)
@@ -592,7 +629,7 @@ func (s *Server) scrapeFeed(feed database.Feed) (int, error) {
 
 		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
 			Title:        item.Title,
-			Url:          item.Link,
+			Url:          strings.ReplaceAll(item.Link, "old.reddit.com", "www.reddit.com"),
 			Description:  desc,
 			PublishedAt:  publishedAt,
 			FeedID:       feed.ID,
@@ -667,6 +704,7 @@ type rawRSSItem struct {
 	PubDate        string           `xml:"pubDate"`
 	MediaContent   []MediaContent   `xml:"http://search.yahoo.com/mrss/ content"`
 	MediaThumbnail []MediaThumbnail `xml:"http://search.yahoo.com/mrss/ thumbnail"`
+	MediaGroup     *MediaGroup      `xml:"http://search.yahoo.com/mrss/ group"`
 	Enclosure      struct {
 		URL  string `xml:"url,attr"`
 		Type string `xml:"type,attr"`
@@ -722,11 +760,24 @@ func extractThumbnail(item rawRSSItem) string {
 			return mt.URL
 		}
 	}
-	// 3. enclosure with image type
+	// 3. nested media:group content/thumbnail
+	if item.MediaGroup != nil {
+		for _, mt := range item.MediaGroup.Thumbnail {
+			if mt.URL != "" {
+				return mt.URL
+			}
+		}
+		for _, mc := range item.MediaGroup.Content {
+			if mc.URL != "" && (mc.Medium == "image" || mc.Medium == "") {
+				return mc.URL
+			}
+		}
+	}
+	// 4. enclosure with image type
 	if item.Enclosure.URL != "" && strings.HasPrefix(item.Enclosure.Type, "image/") {
 		return item.Enclosure.URL
 	}
-	// 4. first <img> in description
+	// 5. first <img> in description
 	if matches := imgTagRe.FindStringSubmatch(item.Description); len(matches) > 1 {
 		return matches[1]
 	}
@@ -770,13 +821,53 @@ func extractAtomThumbnail(entry rawAtomEntry) string {
 	return ""
 }
 
+var ytChannelRe = regexp.MustCompile(`(?i)youtube\.com/(?:channel/([a-zA-Z0-9_-]+)|@([a-zA-Z0-9_.-]+)|user/([a-zA-Z0-9_-]+))`)
+var ytRSSChannelRe = regexp.MustCompile(`<link[^>]+rel=["']alternate["'][^>]+type=["']application/rss\+xml["'][^>]+href=["']([^"']+)["']`)
+
+func resolveYouTubeURL(ctx context.Context, rawURL string) string {
+	m := ytChannelRe.FindStringSubmatch(rawURL)
+	if m == nil {
+		return rawURL
+	}
+	// If it's already a channel_id (starts with UC), build feed URL directly
+	if m[1] != "" {
+		return "https://www.youtube.com/feeds/videos.xml?channel_id=" + m[1]
+	}
+	// For @handle or user/, fetch the page and extract the RSS link
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, "GET", rawURL, nil)
+	if err != nil {
+		return rawURL
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Sift/1.0)")
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode >= 400 {
+		return rawURL
+	}
+	defer resp.Body.Close()
+	buf := make([]byte, 64*1024)
+	n, _ := io.ReadAtLeast(resp.Body, buf, 1)
+	body := string(buf[:n])
+	if mm := ytRSSChannelRe.FindStringSubmatch(body); len(mm) > 1 {
+		return html.UnescapeString(mm[1])
+	}
+	// Fallback: look for channel_id in page source
+	if cidM := regexp.MustCompile(`"channelId":"(UC[a-zA-Z0-9_-]+)"`).FindStringSubmatch(body); len(cidM) > 1 {
+		return "https://www.youtube.com/feeds/videos.xml?channel_id=" + cidM[1]
+	}
+	return rawURL
+}
+
 func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
+	// old.reddit.com serves RSS without bot-wall enforcement
+	feedURL = strings.ReplaceAll(feedURL, "www.reddit.com", "old.reddit.com")
+
 	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "Sift/1.0 RSS Reader")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Sift/1.0)")
 	req.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
 	req.Header.Set("Accept-Encoding", "gzip, deflate")
 
@@ -814,6 +905,16 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 
 	bodyStr = cleanXML(string(body))
 
+	// Detect HTML response (rate limit, error page, etc.)
+	trimmed := strings.TrimSpace(bodyStr)
+	if strings.HasPrefix(trimmed, "<!DOCTYPE") || strings.HasPrefix(trimmed, "<html") || strings.HasPrefix(trimmed, "<HTML") || strings.HasPrefix(trimmed, "<body") {
+		snippet := trimmed
+		if len(snippet) > 200 {
+			snippet = snippet[:200]
+		}
+		return nil, fmt.Errorf("feed returned HTML instead of XML (possible rate limit or redirect): %s", snippet)
+	}
+
 	// Try RSS first with raw structs to capture media namespaces
 	var rawFeed rawRSSFeed
 	if err := xml.Unmarshal([]byte(bodyStr), &rawFeed); err == nil && rawFeed.Channel.Title != "" {
@@ -838,7 +939,14 @@ func (s *Server) fetchRSSFeed(ctx context.Context, feedURL string) (*RSSFeed, er
 	// Try Atom
 	var rawAtom rawAtomFeed
 	if err := xml.Unmarshal([]byte(bodyStr), &rawAtom); err != nil {
-		return nil, fmt.Errorf("XML parse error: %w", err)
+		firstLine := bodyStr
+		if idx := strings.Index(bodyStr, "\n"); idx > 0 {
+			firstLine = bodyStr[:idx]
+		}
+		if len(firstLine) > 200 {
+			firstLine = firstLine[:200]
+		}
+		return nil, fmt.Errorf("XML parse error: %w (first line: %s)", err, firstLine)
 	}
 
 	feed := &RSSFeed{}
@@ -894,6 +1002,89 @@ func cleanDescription(desc string) string {
 	desc = regexp.MustCompile(`\s+`).ReplaceAllString(desc, " ")
 	desc = hnJunkRe.ReplaceAllString(desc, "")
 	return strings.TrimSpace(desc)
+}
+
+// articleCache stores fetched article text: url -> string
+var articleCacheMu sync.Map
+
+func (s *Server) getArticle(c *gin.Context) {
+	rawURL := c.Query("url")
+	if rawURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "url required"})
+		return
+	}
+
+	if cached, ok := articleCacheMu.Load(rawURL); ok {
+		c.JSON(http.StatusOK, cached)
+		return
+	}
+
+	article, err := readability.FromURL(rawURL, 15*time.Second)
+	if err != nil {
+		// Fall back to empty so the modal still shows description
+		result := gin.H{"title": "", "text": "", "image": ""}
+		articleCacheMu.Store(rawURL, result)
+		c.JSON(http.StatusOK, result)
+		return
+	}
+
+	result := gin.H{
+		"title": article.Title,
+		"text":  article.TextContent,
+		"image": article.Image,
+	}
+	articleCacheMu.Store(rawURL, result)
+	c.JSON(http.StatusOK, result)
+}
+
+var ogImageRe = regexp.MustCompile(`(?i)<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']|<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']`)
+
+func (s *Server) getOGImage(c *gin.Context) {
+	rawURL := c.Query("url")
+	if rawURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "url required"})
+		return
+	}
+
+	if cached, ok := s.ogCache.Load(rawURL); ok {
+		c.JSON(http.StatusOK, gin.H{"image": cached})
+		return
+	}
+
+	client := &http.Client{Timeout: 8 * time.Second}
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		s.ogCache.Store(rawURL, "")
+		c.JSON(http.StatusOK, gin.H{"image": ""})
+		return
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Sift/1.0; +https://github.com/LFroesch/Sift)")
+	req.Header.Set("Accept", "text/html")
+
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode >= 400 {
+		s.ogCache.Store(rawURL, "")
+		c.JSON(http.StatusOK, gin.H{"image": ""})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read only first 32KB — OG tags are always in <head>
+	buf := make([]byte, 32*1024)
+	n, _ := io.ReadAtLeast(resp.Body, buf, 1)
+	body := string(buf[:n])
+
+	imageURL := ""
+	if m := ogImageRe.FindStringSubmatch(body); len(m) > 1 {
+		if m[1] != "" {
+			imageURL = html.UnescapeString(m[1])
+		} else if m[2] != "" {
+			imageURL = html.UnescapeString(m[2])
+		}
+	}
+
+	s.ogCache.Store(rawURL, imageURL)
+	c.JSON(http.StatusOK, gin.H{"image": imageURL})
 }
 
 func cleanXML(s string) string {

@@ -62,6 +62,24 @@ func (q *Queries) DeleteAllPosts(ctx context.Context) error {
 	return err
 }
 
+const deleteReadUnbookmarked = `-- name: DeleteReadUnbookmarked :exec
+DELETE FROM posts WHERE is_read = TRUE AND is_bookmarked = FALSE
+`
+
+func (q *Queries) DeleteReadUnbookmarked(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteReadUnbookmarked)
+	return err
+}
+
+const deleteUnbookmarked = `-- name: DeleteUnbookmarked :exec
+DELETE FROM posts WHERE is_bookmarked = FALSE
+`
+
+func (q *Queries) DeleteUnbookmarked(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteUnbookmarked)
+	return err
+}
+
 const getBookmarkedPosts = `-- name: GetBookmarkedPosts :many
 SELECT p.id, p.created_at, p.updated_at, p.title, p.url, p.description, p.published_at, p.feed_id, p.is_read, p.is_bookmarked, p.thumbnail_url, f.name AS feed_name
 FROM posts p

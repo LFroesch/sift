@@ -48,6 +48,12 @@ UPDATE posts SET is_read = FALSE, updated_at = NOW() WHERE id = $1;
 -- name: DeleteAllPosts :exec
 DELETE FROM posts;
 
+-- name: DeleteReadUnbookmarked :exec
+DELETE FROM posts WHERE is_read = TRUE AND is_bookmarked = FALSE;
+
+-- name: DeleteUnbookmarked :exec
+DELETE FROM posts WHERE is_bookmarked = FALSE;
+
 -- name: GetStats :one
 SELECT
     COUNT(*) AS total_posts,

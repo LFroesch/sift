@@ -34,6 +34,8 @@ export const postAPI = {
   markUnread: (id) => request('PATCH', `/posts/${id}/unread`),
   fetchFeeds: () => request('POST', '/fetch'),
   deleteAll: () => request('DELETE', '/posts'),
+  deleteReadUnbookmarked: () => request('DELETE', '/posts/read'),
+  deleteUnbookmarked: () => request('DELETE', '/posts/unbookmarked'),
 }
 
 export const groupAPI = {
@@ -44,6 +46,14 @@ export const groupAPI = {
   addFeed: (groupId, feedId) => request('POST', `/groups/${groupId}/feeds/${feedId}`),
   removeFeed: (groupId, feedId) => request('DELETE', `/groups/${groupId}/feeds/${feedId}`),
   getFeeds: (groupId) => request('GET', `/groups/${groupId}/feeds`),
+}
+
+export const ogAPI = {
+  fetch: (url) => request('GET', `/og?url=${encodeURIComponent(url)}`),
+}
+
+export const articleAPI = {
+  fetch: (url) => request('GET', `/article?url=${encodeURIComponent(url)}`),
 }
 
 export const statsAPI = {
